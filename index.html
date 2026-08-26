@@ -667,14 +667,35 @@ function safeLoad(k){
   try{ const v = JSON.parse(localStorage.getItem(k)); return v; }catch(e){ return null; }
 }
 
-/* ================= 权重与绑定（后台可设） ================= */
+/* ================= 权重与绑定（云端同步 + 本地覆盖） ================= */
 const WKEY = 'et3_weights', BKEY = 'et3_binds';
+let cloudW = {}, cloudB = {};          // 云端全局设置（settings.json）
+let cloudLoaded = false;               // 云端是否加载成功
+
+// 线上打开时自动拉取云端设置；本地模式 fetch 失败则仅用本地
+async function loadCloudSettings(){
+  try{
+    const r = await fetch('settings.json', {cache: 'no-store'});
+    if (r.ok){
+      const d = await r.json();
+      if (d && typeof d === 'object'){
+        if (d.w && typeof d.w === 'object') cloudW = d.w;
+        if (d.b && typeof d.b === 'object') cloudB = d.b;
+        cloudLoaded = true;
+      }
+    }
+  }catch(e){ /* file:// 本地模式不支持 fetch，忽略 */ }
+}
+
+// 最终值 = 云端 + 本地终端覆盖（本地优先，便于本机测试）
 function getWeights(){
-  try{ return JSON.parse(localStorage.getItem(WKEY)) || {}; }catch(e){ return {}; }
+  const local = (function(){ try{ return JSON.parse(localStorage.getItem(WKEY)) || {}; }catch(e){ return {}; } })();
+  return Object.assign({}, cloudW, local);
 }
 function saveWeights(w){ localStorage.setItem(WKEY, JSON.stringify(w)); }
 function getBinds(){
-  try{ return JSON.parse(localStorage.getItem(BKEY)) || {}; }catch(e){ return {}; }
+  const local = (function(){ try{ return JSON.parse(localStorage.getItem(BKEY)) || {}; }catch(e){ return {}; } })();
+  return Object.assign({}, cloudB, local);
 }
 function saveBinds(b){ localStorage.setItem(BKEY, JSON.stringify(b)); }
 function personWeight(p){
@@ -951,7 +972,8 @@ const termHelp = [
   '  bind &lt;姓名&gt; &lt;序号&gt;  把某人固定绑定到某情景（抽中即分配该情景）',
   '  binds          查看全部绑定',
   '  bind reset     清除全部绑定',
-  '  export         导出全部设置（权重+绑定 JSON，可备份/换设备）',
+  '  cloud          查看云端全局设置状态（线上所有人共用）',
+  '  export         导出全部设置（权重+绑定 JSON，可备份/同步云端）',
   '  import &lt;JSON&gt;  粘贴 export 导出的数据恢复设置',
   '  reset &lt;班&gt;   清空指定班级全部记录（1/2/3/all）',
   '  clear          清屏',
@@ -1046,6 +1068,7 @@ function termExec(){
       w[p] = v;
       saveWeights(w);
       termPrint('<span class="t-ok">已设置 ' + p + ' 权重 = ' + v + '（' + (v===0?'不参与抽签':v===1?'普通概率':'普通人的 '+v+' 倍') + '）</span>');
+      termPrint('<span class="t-warn">仅本机生效 · 要全局同步请 export 后发给管理员更新云端</span>');
       break;
     }
     case 'weights':{
@@ -1082,6 +1105,7 @@ function termExec(){
       b[p] = v;
       saveBinds(b);
       termPrint('<span class="t-ok">已绑定 ' + p + ' → 场景' + v + '（' + sceneTitle(v) + '）</span>');
+      termPrint('<span class="t-warn">仅本机生效 · 要全局同步请 export 后发给管理员更新云端</span>');
       break;
     }
     case 'binds':{
@@ -1092,6 +1116,13 @@ function termExec(){
         break;
       }
       keys.forEach(k=>termPrint('<span class="t-ok">'+k+'</span>　→　场景'+b[k]+'（'+sceneById(b[k]).title+'）'));
+      break;
+    }
+    case 'cloud':{
+      termPrint('<span class="t-ok">云端设置状态：' + (cloudLoaded ? '已加载（线上所有人共用）' : '未加载（本地模式，仅本机生效）') + '</span>');
+      termPrint('  云端权重 <b>' + Object.keys(cloudW).length + '</b> 条 · 云端绑定 <b>' + Object.keys(cloudB).length + '</b> 条');
+      termPrint('  本机权重 <b>' + Object.keys(getWeights()).length + '</b> 条 · 本机绑定 <b>' + Object.keys(getBinds()).length + '</b> 条');
+      termPrint('<span class="t-dim">同步方法：本机 export 导出 JSON → 发给管理员 → 管理员更新 settings.json 云端文件，所有人刷新即生效</span>');
       break;
     }
     case 'export':{
@@ -1157,6 +1188,10 @@ renderChoose();
 initRange();
 setMode('seq');
 setPairMode('intra');
+loadCloudSettings().then(() => {
+  // 云端设置加载完成后，若当前在抽签界面则刷新（权重/绑定已更新）
+  if (document.getElementById('screenWork').classList.contains('show')) renderWork();
+});
 document.addEventListener('keydown', e => {
   if (e.code === 'Space' && $('screenWork').classList.contains('show') && !spinning && !$('drawBtn').disabled){
     e.preventDefault(); startDraw();
