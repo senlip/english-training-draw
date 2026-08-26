@@ -517,6 +517,44 @@ function setMode(m){
   $('segRand').classList.toggle('on', m === 'rand');
 }
 
+/* ================= 权重与绑定（后台可设） ================= */
+const WKEY = 'et3_weights', BKEY = 'et3_binds';
+function getWeights(){
+  try{ return JSON.parse(localStorage.getItem(WKEY)) || {}; }catch(e){ return {}; }
+}
+function saveWeights(w){ localStorage.setItem(WKEY, JSON.stringify(w)); }
+function getBinds(){
+  try{ return JSON.parse(localStorage.getItem(BKEY)) || {}; }catch(e){ return {}; }
+}
+function saveBinds(b){ localStorage.setItem(BKEY, JSON.stringify(b)); }
+function personWeight(p){
+  const w = getWeights()[p];
+  return (typeof w === 'number' && w >= 0) ? w : 1;
+}
+
+/* 加权随机抽人：权重越大越易中，0 = 不参与 */
+function pickWeightedPerson(remaining){
+  const pool = remaining.filter(p => personWeight(p) > 0);
+  const cand = pool.length > 0 ? pool : remaining;
+  const total = cand.reduce((s,p) => s + personWeight(p), 0);
+  let r = Math.random() * total;
+  for (const p of cand){
+    r -= personWeight(p);
+    if (r <= 0) return p;
+  }
+  return cand[cand.length - 1];
+}
+
+/* 绑定优先：该人固定分配绑定情景（未用过时生效），否则正常分配 */
+function pickSceneFor(person){
+  const bind = getBinds()[person];
+  if (bind && bind >= 1 && bind <= SCENES.length && !usedScenes.includes(bind)){
+    return {id: bind, bound: true};
+  }
+  const id = pickScene();
+  return id === null ? null : {id, bound: false};
+}
+
 /* ================= 抽签 ================= */
 function pickScene(){
   if (curMode === 'exam'){
@@ -543,8 +581,7 @@ function pickScene(){
 
 function startDraw(){
   if (spinning) return;
-  const sc = pickScene();
-  if (remaining.length === 0 || sc === null){ renderWork(); return; }
+  if (remaining.length === 0){ renderWork(); return; }
   spinning = true;
   $('drawBtn').disabled = true;
   $('resultLine').innerHTML = '&nbsp;';
@@ -555,7 +592,7 @@ function startDraw(){
   const stage = $('stage');
   stage.classList.remove('sweep');
 
-  const winner = remaining[Math.floor(Math.random() * remaining.length)];
+  const winner = pickWeightedPerson(remaining);
   const pool = remaining.slice();
   const FAST = 18, SLOW = 9;
   let step = 0, interval = 50;
@@ -571,12 +608,22 @@ function startDraw(){
   setTimeout(tickOne, 50);
 
   function settle(){
+    const scObj = pickSceneFor(winner);
+    if (scObj === null){
+      // 无可用情景
+      nameEl.textContent = winner;
+      $('resultLine').innerHTML = '⚠ 情景已全部用完，请重置本板块';
+      $('subHint').textContent = '重置本板块后可继续抽签';
+      spinning = false;
+      return;
+    }
+    const sc = scObj.id;
     nameEl.textContent = winner;
     nameEl.classList.add('winner');
     stage.classList.add('sweep');
     playWinner();
     burstParticles(nameEl);
-    $('sceneAssign').innerHTML = '🎬 情景：<b>' + sceneTitle(sc) + '</b>';
+    $('sceneAssign').innerHTML = '🎬 情景：<b>' + sceneTitle(sc) + '</b>' + (scObj.bound ? '<span style="color:var(--gold);font-size:.7em;margin-left:8px">🔗 绑定</span>' : '');
     $('resultLine').innerHTML = '✨ 恭喜 ' + winner + ' 抽中！✨';
     $('subHint').textContent = '点击按钮抽取下一位';
     remaining = remaining.filter(p => p !== winner);
@@ -698,6 +745,12 @@ const termHelp = [
   '  classes        查看班级统计',
   '  scenes         查看情景数据统计',
   '  status         查看当前各板块抽签进度',
+  '  weight &lt;姓名&gt; &lt;N&gt;   设置某人抽中权重（默认1，0=不参与，越大越易中）',
+  '  weights        查看全部权重设置',
+  '  weight reset   全部权重恢复为 1',
+  '  bind &lt;姓名&gt; &lt;序号&gt;  把某人固定绑定到某情景（抽中即分配该情景）',
+  '  binds          查看全部绑定',
+  '  bind reset     清除全部绑定',
   '  reset &lt;班&gt;   清空指定班级全部记录（1/2/3/all）',
   '  clear          清屏',
   '  exit           关闭终端'
@@ -761,6 +814,79 @@ function termExec(){
           termPrint('  <span class="t-dim">'+nm+': 已抽 '+got+'/'+total+' 人 · 已用情景 '+used+' 个'+(m==='practice'?'（范围 '+learnedN+'）':'（共 30）')+'</span>');
         });
       });
+      break;
+    }
+    case 'weight':{
+      const p = parts[1], v = parseFloat(parts[2]);
+      if (!p){
+        termPrint('<span class="t-err">用法：weight &lt;姓名&gt; &lt;N&gt;（0=不参与，越大越易中）；weight reset 恢复默认</span>');
+        break;
+      }
+      if (p === 'reset'){
+        saveWeights({});
+        termPrint('<span class="t-ok">已清除全部权重设置（所有人权重=1）</span>');
+        break;
+      }
+      // 校验姓名存在
+      const found = Object.values(CLASS_DATA).flat().includes(p);
+      if (!found){
+        termPrint('<span class="t-err">未找到人员：' + p + '</span>');
+        break;
+      }
+      if (isNaN(v) || v < 0){
+        termPrint('<span class="t-err">权重需为 ≥0 的数字（0=不参与）</span>');
+        break;
+      }
+      const w = getWeights();
+      w[p] = v;
+      saveWeights(w);
+      termPrint('<span class="t-ok">已设置 ' + p + ' 权重 = ' + v + '（' + (v===0?'不参与抽签':v===1?'普通概率':'普通人的 '+v+' 倍') + '）</span>');
+      break;
+    }
+    case 'weights':{
+      const w = getWeights();
+      const keys = Object.keys(w);
+      if (keys.length === 0){
+        termPrint('<span class="t-dim">暂无权重设置，所有人权重均为 1</span>');
+        break;
+      }
+      keys.forEach(k=>termPrint('<span class="t-ok">'+k+'</span>　权重 <b>'+w[k]+'</b>'));
+      break;
+    }
+    case 'bind':{
+      const p = parts[1], v = parseInt(parts[2], 10);
+      if (!p){
+        termPrint('<span class="t-err">用法：bind &lt;姓名&gt; &lt;场景序号&gt;（1-'+SCENES.length+'）；bind reset 清除全部</span>');
+        break;
+      }
+      if (p === 'reset'){
+        saveBinds({});
+        termPrint('<span class="t-ok">已清除全部绑定</span>');
+        break;
+      }
+      const found = Object.values(CLASS_DATA).flat().includes(p);
+      if (!found){
+        termPrint('<span class="t-err">未找到人员：' + p + '</span>');
+        break;
+      }
+      if (isNaN(v) || v < 1 || v > SCENES.length){
+        termPrint('<span class="t-err">场景序号需为 1-'+SCENES.length+' 的整数</span>');
+        break;
+      }
+      const b = getBinds();
+      b[p] = v;
+      saveBinds(b);
+      termPrint('<span class="t-ok">已绑定 ' + p + ' → 场景' + v + '（' + sceneTitle(v) + '）</span>');
+      break;
+    }
+    case 'binds':{
+      const b = getBinds();
+      const keys = Object.keys(b);
+      if (keys.length === 0){
+        termPrint('<span class="t-dim">暂无绑定设置</span>');
+        break;
+      }
+      keys.forEach(k=>termPrint('<span class="t-ok">'+k+'</span>　→　场景'+b[k]+'（'+sceneById(b[k]).title+'）'));
       break;
     }
     case 'reset':{
