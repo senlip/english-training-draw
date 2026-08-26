@@ -480,25 +480,14 @@ function renderWork(){
   }
   const btn = $('drawBtn');
   const peopleDone = remaining.length === 0;
-  const scenesDone = curMode === 'practice'
-    ? usedScenes.length >= learnedN
-    : usedScenes.length >= SCENES.length;
-  if (peopleDone && scenesDone){
-    btn.textContent = '🏁　人员与情景均已抽完';
+  if (peopleDone){
+    btn.textContent = '🏁　人员已全部抽完';
     btn.disabled = true;
-    $('subHint').textContent = '已全部抽完 · 可重置本板块重新开始';
-  } else if (peopleDone){
-    btn.textContent = '👥　人员已抽完（情景剩余）';
-    btn.disabled = true;
-    $('subHint').textContent = '本班人员已全部抽完 · 可重置本板块';
-  } else if (scenesDone){
-    btn.textContent = '🎬　情景已抽完（人员剩余）';
-    btn.disabled = true;
-    $('subHint').textContent = '情景已全部用完 · 可重置本板块';
+    $('subHint').textContent = '本班人员已全部抽完 · 可重置本板块重新开始';
   } else {
     btn.textContent = '🎲　开 始 抽 签';
     btn.disabled = false;
-    $('subHint').textContent = '每次抽取 1 人 + 分配 1 个情景';
+    $('subHint').textContent = '每次抽取 1 人 + 分配 1 个情景（情景用完自动重置）';
   }
 }
 
@@ -608,14 +597,17 @@ function startDraw(){
   setTimeout(tickOne, 50);
 
   function settle(){
-    const scObj = pickSceneFor(winner);
+    let scObj = pickSceneFor(winner);
+    let sceneReset = false;
     if (scObj === null){
-      // 无可用情景
-      nameEl.textContent = winner;
-      $('resultLine').innerHTML = '⚠ 情景已全部用完，请重置本板块';
-      $('subHint').textContent = '重置本板块后可继续抽签';
-      spinning = false;
-      return;
+      // 情景全部用完 → 自动重置情景池，继续抽取
+      usedScenes = [];
+      nextScene = 1;
+      scObj = pickSceneFor(winner);
+      sceneReset = true;
+      if (scObj === null){  // 极端兜底：范围非法时按全量
+        scObj = {id: 1, bound: false};
+      }
     }
     const sc = scObj.id;
     nameEl.textContent = winner;
@@ -624,7 +616,7 @@ function startDraw(){
     playWinner();
     burstParticles(nameEl);
     $('sceneAssign').innerHTML = '🎬 情景：<b>' + sceneTitle(sc) + '</b>' + (scObj.bound ? '<span style="color:var(--gold);font-size:.7em;margin-left:8px">🔗 绑定</span>' : '');
-    $('resultLine').innerHTML = '✨ 恭喜 ' + winner + ' 抽中！✨';
+    $('resultLine').innerHTML = (sceneReset ? '🔄 情景池已自动重置 · ' : '') + '✨ 恭喜 ' + winner + ' 抽中！✨';
     $('subHint').textContent = '点击按钮抽取下一位';
     remaining = remaining.filter(p => p !== winner);
     usedScenes.push(sc);
