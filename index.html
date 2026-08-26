@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>英语培训 · 情景对话抽签</title>
+<style>
+  :root{
+    --bg:#0B1120; --bg2:#101a30; --panel:#16213A; --panel2:#1C2A47;
+    --border:#2A3A5C; --text:#F2F5FA; --muted:#93A3B8;
+    --gold:#F0C75E; --gold-deep:#C9962E; --green:#4ADE80; --red:#F87171;
+    --radius:20px; --shadow:0 20px 50px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(240,199,94,.10), transparent 60%),
+      radial-gradient(900px 500px at 85% 110%, rgba(60,90,170,.16), transparent 60%),
+      linear-gradient(160deg, var(--bg) 0%, var(--bg2) 100%);
+    color:var(--text); min-height:100vh;
+    display:flex;justify-content:center;align-items:flex-start;
+    padding:22px 16px 40px; overflow-x:hidden;
+  }
+  .wrap{width:100%;max-width:720px}
+
+  /* ========== 通用 ========== */
+  .screen{display:none;animation:fadeUp .4s ease both}
+  .screen.show{display:block}
+  .back-btn{background:transparent;border:1px solid var(--border);color:var(--muted);
+    padding:8px 16px;border-radius:40px;font-size:.85rem;cursor:pointer;transition:all .15s}
+  .back-btn:active{transform:scale(.94)}
+  .cls-badge{display:inline-flex;align-items:center;gap:10px;background:rgba(240,199,94,.10);
+    border:1px solid rgba(240,199,94,.35);color:var(--gold);padding:8px 18px;border-radius:40px;
+    font-weight:700;font-size:.92rem;letter-spacing:1px}
+  .d-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+  .remain{color:var(--muted);font-size:.88rem}
+  .remain b{color:var(--gold);font-size:1.15rem;font-weight:800}
+  .d-right{display:flex;align-items:center;gap:10px}
+  .sound-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border);
+    background:var(--panel);color:var(--muted);font-size:1rem;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;transition:all .15s}
+  .sound-btn.on{background:rgba(240,199,94,.14);border-color:rgba(240,199,94,.5);color:var(--gold)}
+  .sound-btn:active{transform:scale(.9)}
+
+  /* ========== 界面一：选班 ========== */
+  .hero{margin:6vh 0 7vh;text-align:center;position:relative}
+  .trophy{
+    width:74px;height:74px;margin:0 auto 18px;border-radius:22px;position:relative;
+    background:linear-gradient(160deg,#2a3a5c,#16213a);
+    border:1px solid rgba(240,199,94,.35);
+    box-shadow:0 12px 30px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.06);
+    display:flex;align-items:center;justify-content:center;
+    font-size:2rem;animation:float 3.2s ease-in-out infinite;
+  }
+  .trophy .gear{
+    position:absolute;right:-3px;bottom:-3px;width:12px;height:12px;cursor:pointer;
+    opacity:.55;transition:opacity .2s, transform .3s;background:none;border:none;padding:0;
+    display:flex;align-items:center;justify-content:center;color:var(--gold);
+    animation:none;
+  }
+  .trophy .gear:hover{opacity:1;transform:rotate(60deg)}
+  .trophy .gear svg{width:12px;height:12px;display:block}
+  .hero h1{font-size:clamp(1.9rem,7vw,2.7rem);font-weight:800;letter-spacing:2px;
+    background:linear-gradient(180deg,#fff,#d8c07a);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p{color:var(--muted);margin-top:10px;font-size:.95rem;letter-spacing:3px}
+  .hero .gold-line{width:64px;height:3px;border-radius:2px;margin:16px auto 0;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+  .class-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  .class-card{
+    position:relative;overflow:hidden;
+    background:linear-gradient(170deg,var(--panel2),var(--panel));
+    border:1px solid var(--border);border-radius:var(--radius);
+    padding:24px 14px 20px;text-align:center;cursor:pointer;
+    transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+  }
+  .class-card::after{content:"";position:absolute;top:0;left:0;right:0;height:3px;
+    background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.85}
+  .class-card:active{transform:scale(.97)}
+  .class-card:hover{border-color:rgba(240,199,94,.55);transform:translateY(-3px);box-shadow:var(--shadow)}
+  .class-card .num{font-size:2.1rem;font-weight:800;color:#fff;letter-spacing:1px}
+  .class-card .num small{font-size:.95rem;color:var(--gold);font-weight:600}
+  .class-card .cnt{margin-top:8px;color:var(--muted);font-size:.84rem}
+  .class-card .cnt b{color:var(--text);font-weight:700}
+  .class-card .go{margin-top:14px;display:inline-block;padding:8px 22px;border-radius:40px;
+    background:rgba(240,199,94,.12);border:1px solid rgba(240,199,94,.4);
+    color:var(--gold);font-size:.82rem;font-weight:600;letter-spacing:1px}
+  .tip{text-align:center;color:var(--muted);font-size:.82rem;margin-top:30px;letter-spacing:1px}
+
+  /* ========== 界面二：板块选择 ========== */
+  #screenBoard .board-title{text-align:center;margin:4vh 0 6vh}
+  #screenBoard .board-title .cls-tag{display:inline-flex;align-items:center;gap:8px;background:rgba(240,199,94,.10);
+    border:1px solid rgba(240,199,94,.35);color:var(--gold);padding:8px 24px;border-radius:40px;font-weight:700;font-size:1.1rem;letter-spacing:2px}
+  #screenBoard .board-title p{color:var(--muted);margin-top:12px;font-size:.88rem;letter-spacing:2px}
+  .board-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .board-card{
+    background:linear-gradient(170deg,var(--panel2),var(--panel));
+    border:1px solid var(--border);border-radius:26px;padding:34px 20px;text-align:center;cursor:pointer;
+    transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+  }
+  .board-card:active{transform:scale(.97)}
+  .board-card:hover{border-color:rgba(240,199,94,.55);transform:translateY(-3px);box-shadow:var(--shadow)}
+  .board-card .ico{font-size:2.6rem;margin-bottom:14px}
+  .board-card h2{font-size:1.35rem;font-weight:800;letter-spacing:2px}
+  .board-card p{color:var(--muted);font-size:.84rem;margin-top:10px;line-height:1.6}
+  .board-card.practice h2{color:var(--gold)}
+  .board-card.exam h2{color:#A8C8FF}
+
+  /* ========== 界面三/四：练习与考试 ========== */
+  .ctrl-panel{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:18px;padding:14px 16px;margin-bottom:16px}
+  .ctrl-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  .ctrl-label{color:var(--muted);font-size:.82rem;letter-spacing:1px}
+  .ctrl-label b{color:var(--text)}
+  .range-row{display:flex;align-items:center;gap:12px;margin-top:8px}
+  .range-slider{flex:1;-webkit-appearance:none;appearance:none;height:6px;border-radius:4px;
+    background:linear-gradient(90deg,var(--gold),var(--gold-deep));outline:none;cursor:pointer}
+  .range-slider::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;
+    background:#fff;border:4px solid var(--gold);box-shadow:0 2px 8px rgba(0,0,0,.4)}
+  .range-num{color:var(--gold);font-weight:800;font-size:1rem;min-width:44px;text-align:center}
+  .seg{display:inline-flex;background:#1a2745;border:1px solid var(--border);border-radius:40px;padding:3px}
+  .seg button{border:none;background:transparent;padding:6px 18px;border-radius:30px;font-size:.82rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s}
+  .seg button.on{background:var(--gold);color:#0B1120;box-shadow:0 2px 8px rgba(240,199,94,.35)}
+
+  .stage{
+    position:relative;border-radius:26px;overflow:hidden;
+    background:radial-gradient(560px 300px at 50% 0%, rgba(240,199,94,.13), transparent 65%),
+      linear-gradient(180deg,#182442,#111a30);
+    border:1px solid var(--border);box-shadow:var(--shadow);
+    min-height:230px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:26px 16px 22px;margin-bottom:16px;
+  }
+  .stage::before{content:"";position:absolute;top:0;left:-30%;width:30%;height:100%;
+    background:linear-gradient(90deg,transparent,rgba(240,199,94,.16),transparent);
+    transform:skewX(-18deg);pointer-events:none}
+  .stage.sweep::before{animation:sweep 1.1s ease both}
+  .stage-label{color:var(--muted);font-size:.78rem;letter-spacing:5px;margin-bottom:6px}
+  .name-display{min-height:1.2em;font-size:clamp(2.8rem,13vw,5rem);font-weight:900;color:#fff;
+    letter-spacing:3px;text-align:center;line-height:1.15;word-break:break-all;
+    text-shadow:0 0 30px rgba(240,199,94,.35), 0 4px 12px rgba(0,0,0,.5);
+    display:flex;align-items:center;justify-content:center}
+  .name-display.winner{animation:bounceIn .9s cubic-bezier(.2,1.4,.4,1) both}
+  .scene-assign{margin-top:8px;font-size:1.15rem;color:#A8C8FF;font-weight:700;letter-spacing:1px;min-height:1.5em}
+  .scene-assign b{color:var(--gold)}
+  .result-line{height:1.5em;margin-top:4px;font-size:1rem;color:var(--gold);font-weight:700;letter-spacing:2px}
+  .sub-hint{position:absolute;bottom:12px;color:var(--muted);font-size:.76rem;letter-spacing:1px;opacity:.7}
+  .particle{position:absolute;width:8px;height:8px;border-radius:2px;background:var(--gold);
+    box-shadow:0 0 8px rgba(240,199,94,.9);pointer-events:none;animation:fly .9s ease-out both;z-index:5}
+
+  .big-btn{width:100%;padding:18px;border:none;border-radius:60px;cursor:pointer;
+    font-size:1.25rem;font-weight:800;letter-spacing:4px;color:#0B1120;
+    background:linear-gradient(180deg,#FFE08A,#F0C75E 55%,#D9A83C);
+    box-shadow:0 12px 30px rgba(240,199,94,.28), inset 0 1px 0 rgba(255,255,255,.5);
+    transition:transform .15s ease}
+  .big-btn:active{transform:scale(.97)}
+  .big-btn:disabled{opacity:.45;filter:grayscale(.4);pointer-events:none}
+  .sub-actions{display:flex;justify-content:center;gap:14px;margin:14px 0 6px}
+  .text-btn{background:transparent;border:none;color:var(--muted);font-size:.82rem;padding:6px 10px;cursor:pointer;letter-spacing:1px}
+  .text-btn:active{color:var(--gold)}
+
+  /* 台词区 */
+  .script-wrap{border:1px solid var(--border);border-radius:18px;background:rgba(255,255,255,.03);overflow:hidden;margin-top:16px}
+  .script-head{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;
+    background:rgba(240,199,94,.08);border-bottom:1px solid var(--border);
+    font-size:.84rem;font-weight:700;color:var(--gold);flex-wrap:wrap;gap:6px}
+  .script-body{max-height:420px;overflow-y:auto;padding:8px 12px}
+  .line{display:flex;gap:10px;padding:7px 6px;border-radius:12px}
+  .line .spk{flex:0 0 30px;height:24px;line-height:24px;text-align:center;border-radius:20px;
+    font-size:.7rem;font-weight:700;color:#fff;margin-top:2px}
+  .line.role-a .spk{background:#2a5c9a}
+  .line.role-b .spk{background:#2e7d5b}
+  .line .txt{flex:1;min-width:0}
+  .line .en{font-size:.98rem;font-weight:500;color:var(--text)}
+  .line .zh{font-size:.88rem;color:var(--muted);margin-top:2px}
+  .line.role-a{border-left:3px solid #3d6cb8}
+  .line.role-b{border-left:3px solid #3da06f}
+  .exam .line .en{display:none}
+  .empty-script{color:var(--muted);font-style:italic;padding:18px;text-align:center;font-size:.9rem}
+
+  .history{margin-top:16px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:18px;padding:14px 14px 10px}
+  .history-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .history-head h3{font-size:.9rem;color:var(--muted);letter-spacing:1px;font-weight:600}
+  .history-head h3 b{color:var(--gold)}
+  .history-list{display:flex;flex-wrap:wrap;gap:8px;min-height:36px}
+  .h-chip{display:inline-flex;align-items:center;gap:7px;background:var(--panel2);
+    border:1px solid var(--border);border-radius:40px;padding:5px 13px 5px 9px;font-size:.86rem;color:var(--text);cursor:pointer;transition:all .12s}
+  .h-chip:hover{border-color:rgba(240,199,94,.5)}
+  .h-chip .idx{background:rgba(240,199,94,.18);color:var(--gold);border-radius:30px;font-size:.66rem;font-weight:700;padding:1px 7px}
+  .h-chip .sc{background:rgba(168,200,255,.15);color:#A8C8FF;border-radius:30px;font-size:.66rem;font-weight:700;padding:1px 7px}
+  .history-empty{color:var(--muted);font-size:.82rem;opacity:.7}
+
+  /* ========== 后台终端 ========== */
+  .term-mask{position:fixed;inset:0;background:rgba(4,8,16,.72);backdrop-filter:blur(4px);
+    z-index:90;display:none;align-items:center;justify-content:center;padding:20px}
+  .term-mask.show{display:flex;animation:fadeIn .25s ease}
+  .term{
+    width:100%;max-width:620px;max-height:78vh;display:flex;flex-direction:column;
+    background:#0A0F16;border:1px solid #2A3A4C;border-radius:14px;overflow:hidden;
+    box-shadow:0 30px 80px rgba(0,0,0,.6);
+    font-family:"Cascadia Code",Consolas,"Courier New",monospace;
+  }
+  .term-head{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#131A24;border-bottom:1px solid #22303f}
+  .term-dot{width:11px;height:11px;border-radius:50%}
+  .term-dot.r{background:#ff5f57}.term-dot.y{background:#febc2e}.term-dot.g{background:#28c840}
+  .term-title{color:#5c7184;font-size:.78rem;margin-left:8px;letter-spacing:1px}
+  .term-body{flex:1;overflow-y:auto;padding:14px 16px;font-size:.82rem;line-height:1.7;color:#9FE8C8;min-height:240px}
+  .term-body .t-dim{color:#5c7184}
+  .term-body .t-ok{color:#4ADE80}
+  .term-body .t-warn{color:#F0C75E}
+  .term-body .t-err{color:#F87171}
+  .term-body pre{margin:0;white-space:pre-wrap;word-break:break-all}
+  .term-input-row{display:flex;align-items:center;gap:8px;padding:10px 16px;background:#0A0F16;border-top:1px solid #22303f}
+  .term-prompt{color:#4ADE80;font-size:.85rem;white-space:nowrap}
+  .term-input{flex:1;background:transparent;border:none;outline:none;color:#E8EEF4;
+    font-family:inherit;font-size:.85rem}
+  .term-close{position:absolute;top:0;right:0}
+
+  /* ========== 动画 ========== */
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  @keyframes sweep{from{left:-30%}to{left:110%}}
+  @keyframes bounceIn{0%{transform:scale(.2);opacity:0}40%{transform:scale(1.3);opacity:1}
+    60%{transform:scale(.9)}75%{transform:scale(1.12)}90%{transform:scale(.98)}100%{transform:scale(1)}}
+  @keyframes fly{0%{transform:translate(0,0) scale(1);opacity:1}
+    100%{transform:translate(var(--dx),var(--dy)) scale(.1);opacity:0}}
+  @media (max-width:520px){
+    .class-grid{grid-template-columns:1fr;gap:12px}
+    .class-card{padding:18px 14px 16px}
+    .board-grid{grid-template-columns:1fr}
+    .stage{min-height:210px}
+    .name-display{font-size:clamp(2.4rem,12vw,3.6rem)}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ===== 界面一：选班级 ===== -->
+  <div id="screenChoose" class="screen show">
+    <div class="hero">
+      <div class="trophy">
+        🏆
+        <button class="gear" id="gearBtn" onclick="openTerm()" title="后台">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.48.48 0 0 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.61 3.61 0 0 1 8.4 12c0-1.98 1.62-3.6 3.6-3.6s3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+        </button>
+      </div>
+      <h1>英语培训 · 情景对话</h1>
+      <p>中 铝 · 练 习 与 考 试 抽 签</p>
+      <div class="gold-line"></div>
+    </div>
+    <div class="class-grid" id="classGrid"></div>
+    <div class="tip">选择班级进入 · 平时练习 / 考试 两种模式</div>
+  </div>
+
+  <!-- ===== 界面二：板块选择 ===== -->
+  <div id="screenBoard" class="screen">
+    <div class="d-header">
+      <button class="back-btn" onclick="goChoose()">‹ 返回</button>
+      <div class="cls-badge" id="boardClsBadge"></div>
+      <div></div>
+    </div>
+    <div class="board-title">
+      <div class="cls-tag" id="boardClsTag"></div>
+      <p>选择本次使用方式</p>
+    </div>
+    <div class="board-grid">
+      <div class="board-card practice" onclick="enterMode('practice')">
+        <div class="ico">📖</div>
+        <h2>平时练习</h2>
+        <p>情景范围可控 · 顺序/随机抽签<br>显示完整中英对照台词</p>
+      </div>
+      <div class="board-card exam" onclick="enterMode('exam')">
+        <div class="ico">📝</div>
+        <h2>考试</h2>
+        <p>全情景随机抽签<br>仅显示中文台词</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 界面三/四：练习 / 考试 ===== -->
+  <div id="screenWork" class="screen">
+    <div class="d-header">
+      <button class="back-btn" onclick="goBoard()">‹ 返回</button>
+      <div class="cls-badge" id="workClsBadge"></div>
+      <div class="d-right">
+        <div class="remain">剩余 <b id="remainNum">0</b> 人</div>
+        <button class="sound-btn" id="soundBtn" onclick="toggleSound()" title="音效开关">🔇</button>
+      </div>
+    </div>
+
+    <!-- 平时练习：控制区 -->
+    <div class="ctrl-panel" id="ctrlPractice" style="display:none">
+      <div class="ctrl-row">
+        <span class="ctrl-label">已学情景范围 <b id="rangeDesc">场景 1 – 30</b></span>
+        <span class="ctrl-label">抽签方式</span>
+      </div>
+      <div class="range-row">
+        <span class="range-num" id="sceneCountNum">30</span>
+        <input type="range" class="range-slider" id="sceneCountSlider" min="1" max="30" value="30">
+        <div class="seg" id="modeSeg">
+          <button id="segSeq" class="on" onclick="setMode('seq')">按顺序</button>
+          <button id="segRand" onclick="setMode('rand')">随机</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage" id="stage">
+      <div class="stage-label" id="stageLabel">— 抽 签 台 —</div>
+      <div class="name-display" id="nameDisplay">—</div>
+      <div class="scene-assign" id="sceneAssign">&nbsp;</div>
+      <div class="result-line" id="resultLine">&nbsp;</div>
+      <div class="sub-hint" id="subHint">点击下方按钮开始抽签</div>
+    </div>
+
+    <button class="big-btn" id="drawBtn" onclick="startDraw()">🎲　开 始 抽 签</button>
+    <div class="sub-actions">
+      <button class="text-btn" onclick="resetMode()">↺ 重置本板块</button>
+    </div>
+
+    <!-- 台词区 -->
+    <div class="script-wrap" id="scriptWrap" style="display:none">
+      <div class="script-head" id="scriptTitle"></div>
+      <div class="script-body" id="scriptBody"></div>
+    </div>
+
+    <div class="history">
+      <div class="history-head">
+        <h3>已抽记录（<b id="histCount">0</b>）· 点击可回看台词</h3>
+        <button class="text-btn" onclick="resetMode()">清空</button>
+      </div>
+      <div class="history-list" id="historyList"><span class="history-empty">尚未开始抽签</span></div>
+    </div>
+  </div>
+
+  <!-- ===== 后台终端 ===== -->
+  <div class="term-mask" id="termMask" onclick="if(event.target===this)closeTerm()">
+    <div class="term">
+      <div class="term-head">
+        <span class="term-dot r"></span><span class="term-dot y"></span><span class="term-dot g"></span>
+        <span class="term-title">后台终端 · admin@training</span>
+      </div>
+      <div class="term-body" id="termBody"></div>
+      <div class="term-input-row">
+        <span class="term-prompt">admin@training:~$</span>
+        <input class="term-input" id="termInput" autocomplete="off" spellcheck="false"
+               onkeydown="if(event.key==='Enter')termExec()" placeholder="输入 help 查看命令">
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================= 数据 ================= */
+const CLASS_DATA = {
+  "中铝1班": ["王多胜","吴建伟","安百俊","韩宝云","连英霞","张隽睿","徐礼涛","苏明明","卢德川","程波","张越","陈长昊","郭薇","韩小伟","李丰宾","刘万城","田硕","付瑞云","杨国锋","赵再强","丁海洋","卫星"],
+  "中铝2班": ["孟凡伟","赵阿朋","陈烈亭","范苏伟","梁磊","詹海英","张建","江治","王备战","乔占春","李绍泽","刘伟","耿晔","狄元康","王尚锋","薛云杰","吴斌","李俊豪","唐亮","张瑞忠","吴刚","吴锋","何冠平"],
+  "中铝3班": ["张伟","陈映","郭松林","杨文虎","刘建龙","戴懿","闫莉栋","宋贵平","黄烨","高军","张站云","王文涵","毛文军","文胜毅","冉海","张永申","苏江敏","银光","石亚飞","黄国才","张海涛","娄兴足","贾文杰","刘中凯"]
+};
+const SCENES = [
+{"id":1,"title":"问候新同事","lines":[{"r":"A","n":1,"en":"Hello! Nice to meet you.","zh":"你好！很高兴认识你。"},{"r":"B","n":1,"en":"Hi! Nice to meet you too.","zh":"嗨！我也很高兴认识你。"},{"r":"A","n":2,"en":"Are you new here?","zh":"你是新来的吗？"},{"r":"B","n":2,"en":"Yes, I am. I just started today.","zh":"是的，我今天刚来。"},{"r":"A","n":3,"en":"Welcome to our team.","zh":"欢迎加入我们团队。"},{"r":"B","n":3,"en":"Thank you. Everyone is friendly.","zh":"谢谢。大家都很友好。"},{"r":"A","n":4,"en":"Where are you from?","zh":"你来自哪里？"},{"r":"B","n":4,"en":"I am from the US.","zh":"我来自美国。"},{"r":"A","n":5,"en":"How long will you stay?","zh":"你会待多久？"},{"r":"B","n":5,"en":"Maybe one year.","zh":"可能一年。"},{"r":"A","n":6,"en":"Do you like this city?","zh":"你喜欢这个城市吗？"},{"r":"B","n":6,"en":"Yes, it's very nice.","zh":"是的，它很好。"},{"r":"A","n":7,"en":"Let me show you around.","zh":"让我带你转转。"},{"r":"B","n":7,"en":"That's very kind of you.","zh":"你太好了。"},{"r":"A","n":8,"en":"Let's go to the cafeteria.","zh":"我们去食堂吧。"},{"r":"B","n":8,"en":"Great! I'm a little hungry.","zh":"太好了！我有点饿。"}]},
+{"id":2,"title":"天气","lines":[{"r":"A","n":1,"en":"It's sunny today, isn't it?","zh":"今天天气晴朗，对吧？"},{"r":"B","n":1,"en":"Yes, it's beautiful.","zh":"是的，天气很好。"},{"r":"A","n":2,"en":"What's the temperature?","zh":"温度多少？"},{"r":"B","n":2,"en":"About 25 degrees.","zh":"大约25度。"},{"r":"A","n":3,"en":"I like warm weather.","zh":"我喜欢温暖的天气。"},{"r":"B","n":3,"en":"Me too. It's comfortable.","zh":"我也是。很舒服。"},{"r":"A","n":4,"en":"Will it rain tomorrow?","zh":"明天会下雨吗？"},{"r":"B","n":4,"en":"I don't think so.","zh":"我想不会。"},{"r":"A","n":5,"en":"Let's go for a walk.","zh":"我们去散步吧。"},{"r":"B","n":5,"en":"Good idea! Where?","zh":"好主意！去哪里？"},{"r":"A","n":6,"en":"How about the park?","zh":"公园怎么样？"},{"r":"B","n":6,"en":"Sure, I love parks.","zh":"当然，我喜欢公园。"},{"r":"A","n":7,"en":"We can have a picnic.","zh":"我们可以野餐。"},{"r":"B","n":7,"en":"That sounds fun.","zh":"听起来很有趣。"},{"r":"A","n":8,"en":"I'll bring some snacks.","zh":"我会带些零食。"},{"r":"B","n":8,"en":"Great! I'll bring drinks.","zh":"太好了！我带饮料。"}]},
+{"id":3,"title":"问路","lines":[{"r":"A","n":1,"en":"Excuse me, can you help me?","zh":"打扰一下，你能帮我吗？"},{"r":"B","n":1,"en":"Sure. What do you need?","zh":"当然。你需要什么？"},{"r":"A","n":2,"en":"Where is the train station?","zh":"火车站在哪里？"},{"r":"B","n":2,"en":"Go straight ahead.","zh":"直走。"},{"r":"A","n":3,"en":"Is it far from here?","zh":"离这里远吗？"},{"r":"B","n":3,"en":"No, about 10 minutes.","zh":"不远，大约10分钟。"},{"r":"A","n":4,"en":"Which street is it on?","zh":"它在哪条街上？"},{"r":"B","n":4,"en":"It's on Main Street.","zh":"在主街上。"},{"r":"A","n":5,"en":"Can I walk there?","zh":"我可以走过去吗？"},{"r":"B","n":5,"en":"Yes, it's easy.","zh":"可以，很容易。"},{"r":"A","n":6,"en":"Is there a bus?","zh":"有公交车吗？"},{"r":"B","n":6,"en":"Yes, but walking is faster.","zh":"有，但走路更快。"},{"r":"A","n":7,"en":"Thank you very much.","zh":"非常感谢。"},{"r":"B","n":7,"en":"You're welcome.","zh":"不客气。"},{"r":"A","n":8,"en":"Have a nice day!","zh":"祝你今天愉快！"},{"r":"B","n":8,"en":"You too! Bye!","zh":"你也是！再见！"}]},
+{"id":4,"title":"餐厅点餐","lines":[{"r":"A","n":1,"en":"Let's have lunch here.","zh":"我们在这里吃午饭吧。"},{"r":"B","n":1,"en":"Okay, this place looks nice.","zh":"好的，这个地方看起来不错。"},{"r":"A","n":2,"en":"What do you want to eat?","zh":"你想吃什么？"},{"r":"B","n":2,"en":"I'd like a hamburger.","zh":"我想要一个汉堡。"},{"r":"A","n":3,"en":"Do you want fries?","zh":"你想要薯条吗？"},{"r":"B","n":3,"en":"Yes, please. And a soda.","zh":"是的，谢谢。还要一杯汽水。"},{"r":"A","n":4,"en":"What about dessert?","zh":"甜点呢？"},{"r":"B","n":4,"en":"Maybe some ice cream.","zh":"也许来个冰淇淋。"},{"r":"A","n":5,"en":"Let's order.","zh":"我们点单吧。"},{"r":"B","n":5,"en":"Okay. Excuse me, waiter!","zh":"好的。打扰一下，服务员！"},{"r":"A","n":6,"en":"I'll have a burger and fries.","zh":"我要汉堡和薯条。"},{"r":"B","n":6,"en":"I'll have the salad.","zh":"我要沙拉。"},{"r":"A","n":7,"en":"Is the food good here?","zh":"这里的食物好吃吗？"},{"r":"B","n":7,"en":"Yes, it's delicious.","zh":"是的，很好吃。"},{"r":"A","n":8,"en":"Let's enjoy our meal.","zh":"我们好好享用吧。"},{"r":"B","n":8,"en":"Enjoy! Cheers!","zh":"享用愉快！干杯！"}]},
+{"id":5,"title":"买衣服","lines":[{"r":"A","n":1,"en":"Can I help you?","zh":"需要帮忙吗？"},{"r":"B","n":1,"en":"Yes, I'm looking for a shirt.","zh":"是的，我想找一件衬衫。"},{"r":"A","n":2,"en":"What size do you wear?","zh":"你穿什么尺码？"},{"r":"B","n":2,"en":"I wear size M.","zh":"我穿M码。"},{"r":"A","n":3,"en":"What color do you like?","zh":"你喜欢什么颜色？"},{"r":"B","n":3,"en":"I prefer blue.","zh":"我更喜欢蓝色。"},{"r":"A","n":4,"en":"How about this one?","zh":"这件怎么样？"},{"r":"B","n":4,"en":"It looks nice. Can I try it on?","zh":"看起来不错。我能试穿吗？"},{"r":"A","n":5,"en":"Sure. The fitting room is over there.","zh":"当然。试衣间在那边。"},{"r":"B","n":5,"en":"Thank you.","zh":"谢谢。"},{"r":"A","n":6,"en":"How does it fit?","zh":"合身吗？"},{"r":"B","n":6,"en":"It fits perfectly.","zh":"非常合身。"},{"r":"A","n":7,"en":"How much is it?","zh":"多少钱？"},{"r":"B","n":7,"en":"It's 200 yuan.","zh":"200元。"},{"r":"A","n":8,"en":"I'll take it.","zh":"我买了。"},{"r":"B","n":8,"en":"Great. Let me wrap it up.","zh":"好的，我来包起来。"}]},
+{"id":6,"title":"酒店入住","lines":[{"r":"A","n":1,"en":"Good evening. Welcome!","zh":"晚上好，欢迎光临！"},{"r":"B","n":1,"en":"Hello. I have a reservation.","zh":"你好，我有预订。"},{"r":"A","n":2,"en":"What's your name, please?","zh":"请问您的名字？"},{"r":"B","n":2,"en":"My name is Li Ming.","zh":"我叫李明。"},{"r":"A","n":3,"en":"How long will you stay?","zh":"您要住多久？"},{"r":"B","n":3,"en":"Three nights.","zh":"三个晚上。"},{"r":"A","n":4,"en":"What kind of room?","zh":"需要什么房间？"},{"r":"B","n":4,"en":"A single room, please.","zh":"单人间。"},{"r":"A","n":5,"en":"Here is your key.","zh":"这是您的钥匙。"},{"r":"B","n":5,"en":"What time is breakfast?","zh":"早餐几点？"},{"r":"A","n":6,"en":"From 7 to 10.","zh":"7点到10点。"},{"r":"B","n":6,"en":"Is there free Wi-Fi?","zh":"有免费Wi-Fi吗？"},{"r":"A","n":7,"en":"Yes, the password is on the desk.","zh":"有的，密码在桌上。"},{"r":"B","n":7,"en":"Great. Thank you.","zh":"太好了，谢谢。"},{"r":"A","n":8,"en":"Enjoy your stay!","zh":"祝您入住愉快！"},{"r":"B","n":8,"en":"Thanks. Good night.","zh":"谢谢，晚安。"}]},
+{"id":7,"title":"谈论工作","lines":[{"r":"A","n":1,"en":"What do you do?","zh":"你是做什么工作的？"},{"r":"B","n":1,"en":"I'm an engineer.","zh":"我是工程师。"},{"r":"A","n":2,"en":"Where do you work?","zh":"你在哪里工作？"},{"r":"B","n":2,"en":"I work for a big company.","zh":"我在一家大公司工作。"},{"r":"A","n":3,"en":"Do you like your job?","zh":"你喜欢你的工作吗？"},{"r":"B","n":3,"en":"Yes, it's interesting.","zh":"喜欢，很有趣。"},{"r":"A","n":4,"en":"How are your colleagues?","zh":"你的同事怎么样？"},{"r":"B","n":4,"en":"They are very helpful.","zh":"他们很乐于助人。"},{"r":"A","n":5,"en":"What time do you start work?","zh":"你几点开始工作？"},{"r":"B","n":5,"en":"At 9 o'clock.","zh":"九点。"},{"r":"A","n":6,"en":"Do you work on weekends?","zh":"你周末上班吗？"},{"r":"B","n":6,"en":"Sometimes.","zh":"有时会。"},{"r":"A","n":7,"en":"Is your office far?","zh":"你的办公室远吗？"},{"r":"B","n":7,"en":"No, it's near my home.","zh":"不远，离我家很近。"},{"r":"A","n":8,"en":"Let's have lunch together.","zh":"我们一起吃午饭吧。"},{"r":"B","n":8,"en":"Good idea!","zh":"好主意！"}]},
+{"id":8,"title":"谈论爱好","lines":[{"r":"A","n":1,"en":"What do you do in your free time?","zh":"你空闲时间做什么？"},{"r":"B","n":1,"en":"I like reading books.","zh":"我喜欢读书。"},{"r":"A","n":2,"en":"What kind of books?","zh":"什么类型的书？"},{"r":"B","n":2,"en":"Novels and history.","zh":"小说和历史。"},{"r":"A","n":3,"en":"Do you like music?","zh":"你喜欢音乐吗？"},{"r":"B","n":3,"en":"Yes, I love it.","zh":"喜欢，我很爱听。"},{"r":"A","n":4,"en":"What's your favorite hobby?","zh":"你最喜欢的爱好是什么？"},{"r":"B","n":4,"en":"Playing basketball.","zh":"打篮球。"},{"r":"A","n":5,"en":"Do you play often?","zh":"你经常打吗？"},{"r":"B","n":5,"en":"Twice a week.","zh":"一周两次。"},{"r":"A","n":6,"en":"Do you like cooking?","zh":"你喜欢做饭吗？"},{"r":"B","n":6,"en":"Not really.","zh":"不太喜欢。"},{"r":"A","n":7,"en":"How about traveling?","zh":"旅行呢？"},{"r":"B","n":7,"en":"I love traveling.","zh":"我喜欢旅行。"},{"r":"A","n":8,"en":"Let's travel together sometime.","zh":"改天一起去旅行吧。"},{"r":"B","n":8,"en":"That would be great!","zh":"那太好了！"}]},
+{"id":9,"title":"谈论家庭","lines":[{"r":"A","n":1,"en":"Do you have a big family?","zh":"你的家庭大吗？"},{"r":"B","n":1,"en":"Yes, I do.","zh":"是的。"},{"r":"A","n":2,"en":"How many people?","zh":"家里几口人？"},{"r":"B","n":2,"en":"Five people.","zh":"五口人。"},{"r":"A","n":3,"en":"Do you have siblings?","zh":"你有兄弟姐妹吗？"},{"r":"B","n":3,"en":"I have one brother.","zh":"我有一个哥哥。"},{"r":"A","n":4,"en":"Do you live with your parents?","zh":"你和父母住吗？"},{"r":"B","n":4,"en":"Yes, I do.","zh":"是的。"},{"r":"A","n":5,"en":"What does your father do?","zh":"你父亲做什么？"},{"r":"B","n":5,"en":"He is a teacher.","zh":"他是老师。"},{"r":"A","n":6,"en":"Does your mother work?","zh":"你母亲工作吗？"},{"r":"B","n":6,"en":"Yes, she is a nurse.","zh":"是的，她是护士。"},{"r":"A","n":7,"en":"Do you have children?","zh":"你有孩子吗？"},{"r":"B","n":7,"en":"Yes, a son.","zh":"有一个儿子。"},{"r":"A","n":8,"en":"Your family sounds wonderful.","zh":"你的家庭听起来很幸福。"},{"r":"B","n":8,"en":"Thank you!","zh":"谢谢！"}]},
+{"id":10,"title":"周末计划","lines":[{"r":"A","n":1,"en":"What are your plans for the weekend?","zh":"你周末有什么计划？"},{"r":"B","n":1,"en":"I'll go shopping.","zh":"我会去购物。"},{"r":"A","n":2,"en":"Where will you go?","zh":"你去哪里？"},{"r":"B","n":2,"en":"To the mall.","zh":"去商场。"},{"r":"A","n":3,"en":"Anything else?","zh":"还有别的吗？"},{"r":"B","n":3,"en":"Maybe a movie.","zh":"可能看场电影。"},{"r":"A","n":4,"en":"What movie?","zh":"什么电影？"},{"r":"B","n":4,"en":"A comedy.","zh":"一部喜剧。"},{"r":"A","n":5,"en":"Who will you go with?","zh":"和谁一起去？"},{"r":"B","n":5,"en":"With my friends.","zh":"和朋友们。"},{"r":"A","n":6,"en":"Will you eat out?","zh":"会在外面吃吗？"},{"r":"B","n":6,"en":"Yes, we'll have hotpot.","zh":"会，我们吃火锅。"},{"r":"A","n":7,"en":"Sounds fun!","zh":"听起来很有趣！"},{"r":"B","n":7,"en":"Want to join us?","zh":"想一起来吗？"},{"r":"A","n":8,"en":"Sure, I'd love to.","zh":"当然，我很乐意。"},{"r":"B","n":8,"en":"Great! See you then.","zh":"太好了，到时候见。"}]},
+{"id":11,"title":"旅行计划","lines":[{"r":"A","n":1,"en":"Where are you going for vacation?","zh":"你假期去哪里？"},{"r":"B","n":1,"en":"I'm going to Beijing.","zh":"我要去北京。"},{"r":"A","n":2,"en":"How will you get there?","zh":"你怎么去？"},{"r":"B","n":2,"en":"By high-speed train.","zh":"坐高铁。"},{"r":"A","n":3,"en":"How long is the trip?","zh":"路程多长时间？"},{"r":"B","n":3,"en":"About 5 hours.","zh":"大约5小时。"},{"r":"A","n":4,"en":"Where will you stay?","zh":"你住在哪里？"},{"r":"B","n":4,"en":"At a hotel near the center.","zh":"市中心附近的一家酒店。"},{"r":"A","n":5,"en":"What will you visit?","zh":"你会参观什么？"},{"r":"B","n":5,"en":"The Great Wall and the Palace.","zh":"长城和故宫。"},{"r":"A","n":6,"en":"How long will you stay?","zh":"你会待多久？"},{"r":"B","n":6,"en":"Four days.","zh":"四天。"},{"r":"A","n":7,"en":"Will you take photos?","zh":"你会拍照吗？"},{"r":"B","n":7,"en":"Of course.","zh":"当然。"},{"r":"A","n":8,"en":"Have a nice trip!","zh":"旅途愉快！"},{"r":"B","n":8,"en":"Thanks! I will.","zh":"谢谢！我会的。"}]},
+{"id":12,"title":"谈论运动","lines":[{"r":"A","n":1,"en":"Do you like sports?","zh":"你喜欢运动吗？"},{"r":"B","n":1,"en":"Yes, I do.","zh":"喜欢。"},{"r":"A","n":2,"en":"What's your favorite sport?","zh":"你最喜欢的运动是什么？"},{"r":"B","n":2,"en":"I like swimming.","zh":"我喜欢游泳。"},{"r":"A","n":3,"en":"How often do you swim?","zh":"你多久游一次？"},{"r":"B","n":3,"en":"Every weekend.","zh":"每个周末。"},{"r":"A","n":4,"en":"Do you play soccer?","zh":"你踢足球吗？"},{"r":"B","n":4,"en":"Sometimes.","zh":"偶尔。"},{"r":"A","n":5,"en":"What about badminton?","zh":"羽毛球呢？"},{"r":"B","n":5,"en":"I play it with friends.","zh":"我和朋友打。"},{"r":"A","n":6,"en":"Are you good at running?","zh":"你擅长跑步吗？"},{"r":"B","n":6,"en":"I'm okay at it.","zh":"还行。"},{"r":"A","n":7,"en":"Let's play basketball.","zh":"我们去打篮球吧。"},{"r":"B","n":7,"en":"Good idea!","zh":"好主意！"},{"r":"A","n":8,"en":"See you on the court.","zh":"球场上见。"},{"r":"B","n":8,"en":"See you!","zh":"到时候见！"}]},
+{"id":13,"title":"谈论电影","lines":[{"r":"A","n":1,"en":"Do you like movies?","zh":"你喜欢看电影吗？"},{"r":"B","n":1,"en":"Yes, very much.","zh":"非常喜欢。"},{"r":"A","n":2,"en":"What type do you like?","zh":"你喜欢什么类型？"},{"r":"B","n":2,"en":"Action movies.","zh":"动作片。"},{"r":"A","n":3,"en":"Who's your favorite actor?","zh":"你最喜欢的演员是谁？"},{"r":"B","n":3,"en":"I like Jackie Chan.","zh":"我喜欢成龙。"},{"r":"A","n":4,"en":"Do you watch movies online?","zh":"你在网上看电影吗？"},{"r":"B","n":4,"en":"Yes, I do.","zh":"是的。"},{"r":"A","n":5,"en":"How often do you go to the cinema?","zh":"你多久去一次电影院？"},{"r":"B","n":5,"en":"Once a month.","zh":"一个月一次。"},{"r":"A","n":6,"en":"Which movie is popular now?","zh":"最近哪部电影受欢迎？"},{"r":"B","n":6,"en":"I don't know.","zh":"我不知道。"},{"r":"A","n":7,"en":"Let's watch a movie tonight.","zh":"我们今晚看电影吧。"},{"r":"B","n":7,"en":"Great idea!","zh":"好主意！"},{"r":"A","n":8,"en":"I'll buy the tickets.","zh":"我来买票。"},{"r":"B","n":8,"en":"Thanks a lot!","zh":"非常感谢！"}]},
+{"id":14,"title":"谈论音乐","lines":[{"r":"A","n":1,"en":"Do you like music?","zh":"你喜欢音乐吗？"},{"r":"B","n":1,"en":"Yes, I love music.","zh":"喜欢，我很热爱音乐。"},{"r":"A","n":2,"en":"What kind of music?","zh":"什么类型的音乐？"},{"r":"B","n":2,"en":"Pop music.","zh":"流行音乐。"},{"r":"A","n":3,"en":"Who's your favorite singer?","zh":"你最喜欢的歌手是谁？"},{"r":"B","n":3,"en":"I like Jay Chou.","zh":"我喜欢周杰伦。"},{"r":"A","n":4,"en":"Do you play any instruments?","zh":"你会演奏乐器吗？"},{"r":"B","n":4,"en":"I play the guitar.","zh":"我会弹吉他。"},{"r":"A","n":5,"en":"Can you sing?","zh":"你会唱歌吗？"},{"r":"B","n":5,"en":"A little bit.","zh":"会一点。"},{"r":"A","n":6,"en":"What song do you like?","zh":"你喜欢什么歌？"},{"r":"B","n":6,"en":"I like slow songs.","zh":"我喜欢慢歌。"},{"r":"A","n":7,"en":"Let's listen to music.","zh":"我们听音乐吧。"},{"r":"B","n":7,"en":"Good idea.","zh":"好主意。"},{"r":"A","n":8,"en":"Do you want to sing a song?","zh":"你想唱首歌吗？"},{"r":"B","n":8,"en":"Maybe next time.","zh":"下次吧。"}]},
+{"id":15,"title":"谈论食物","lines":[{"r":"A","n":1,"en":"What's your favorite food?","zh":"你最喜欢的食物是什么？"},{"r":"B","n":1,"en":"I like dumplings.","zh":"我喜欢饺子。"},{"r":"A","n":2,"en":"Do you like spicy food?","zh":"你喜欢辣的食物吗？"},{"r":"B","n":2,"en":"Yes, I love it.","zh":"喜欢，我很爱吃辣。"},{"r":"A","n":3,"en":"Can you cook?","zh":"你会做饭吗？"},{"r":"B","n":3,"en":"Yes, a little.","zh":"会一点。"},{"r":"A","n":4,"en":"What's your favorite dish?","zh":"你最喜欢的一道菜是什么？"},{"r":"B","n":4,"en":"Kung Pao Chicken.","zh":"宫保鸡丁。"},{"r":"A","n":5,"en":"Do you like vegetables?","zh":"你喜欢蔬菜吗？"},{"r":"B","n":5,"en":"Yes, they are healthy.","zh":"喜欢，蔬菜很健康。"},{"r":"A","n":6,"en":"What about fruit?","zh":"水果呢？"},{"r":"B","n":6,"en":"I like apples.","zh":"我喜欢苹果。"},{"r":"A","n":7,"en":"Let's have dinner together.","zh":"我们一起吃晚饭吧。"},{"r":"B","n":7,"en":"Sure! Where?","zh":"好啊！去哪里？"},{"r":"A","n":8,"en":"How about Sichuan food?","zh":"川菜怎么样？"},{"r":"B","n":8,"en":"Great! I love it.","zh":"太好了！我喜欢。"}]},
+{"id":16,"title":"谈论健康","lines":[{"r":"A","n":1,"en":"How are you feeling today?","zh":"你今天感觉怎么样？"},{"r":"B","n":1,"en":"I'm feeling great.","zh":"我感觉很好。"},{"r":"A","n":2,"en":"Do you exercise every day?","zh":"你每天锻炼吗？"},{"r":"B","n":2,"en":"Yes, I run in the morning.","zh":"是的，我早上跑步。"},{"r":"A","n":3,"en":"Do you eat healthily?","zh":"你吃得健康吗？"},{"r":"B","n":3,"en":"I try to.","zh":"我尽量。"},{"r":"A","n":4,"en":"Do you sleep well?","zh":"你睡得好吗？"},{"r":"B","n":4,"en":"Usually, yes.","zh":"通常很好。"},{"r":"A","n":5,"en":"How much water do you drink?","zh":"你喝多少水？"},{"r":"B","n":5,"en":"About 8 glasses.","zh":"大约8杯。"},{"r":"A","n":6,"en":"Do you feel stressed?","zh":"你感觉压力大吗？"},{"r":"B","n":6,"en":"Sometimes.","zh":"有时会。"},{"r":"A","n":7,"en":"You should relax more.","zh":"你应该多放松。"},{"r":"B","n":7,"en":"I know. I'll try.","zh":"我知道，我会试试。"},{"r":"A","n":8,"en":"Take care of yourself.","zh":"照顾好自己。"},{"r":"B","n":8,"en":"You too.","zh":"你也是。"}]},
+{"id":17,"title":"谈论节日","lines":[{"r":"A","n":1,"en":"What's your favorite holiday?","zh":"你最喜欢的节日是什么？"},{"r":"B","n":1,"en":"The Spring Festival.","zh":"春节。"},{"r":"A","n":2,"en":"How do you celebrate it?","zh":"你们怎么庆祝？"},{"r":"B","n":2,"en":"We have a big dinner.","zh":"我们吃团圆饭。"},{"r":"A","n":3,"en":"Do you watch fireworks?","zh":"你们看烟花吗？"},{"r":"B","n":3,"en":"Yes, every year.","zh":"每年都看。"},{"r":"A","n":4,"en":"Do you give gifts?","zh":"你们送礼物吗？"},{"r":"B","n":4,"en":"We give red packets.","zh":"我们发红包。"},{"r":"A","n":5,"en":"Do you visit relatives?","zh":"你们走亲戚吗？"},{"r":"B","n":5,"en":"Yes, we do.","zh":"是的。"},{"r":"A","n":6,"en":"What do you eat?","zh":"你们吃什么？"},{"r":"B","n":6,"en":"Dumplings and fish.","zh":"饺子和鱼。"},{"r":"A","n":7,"en":"Why fish?","zh":"为什么吃鱼？"},{"r":"B","n":7,"en":"It means good luck.","zh":"象征着好运。"},{"r":"A","n":8,"en":"That's interesting.","zh":"真有意思。"},{"r":"B","n":8,"en":"Happy New Year!","zh":"新年快乐！"}]},
+{"id":18,"title":"询问时间","lines":[{"r":"A","n":1,"en":"Excuse me, what time is it?","zh":"打扰一下，现在几点了？"},{"r":"B","n":1,"en":"It's 3 o'clock.","zh":"三点。"},{"r":"A","n":2,"en":"What time does the meeting start?","zh":"会议几点开始？"},{"r":"B","n":2,"en":"At 3:30.","zh":"三点半。"},{"r":"A","n":3,"en":"Do you have time?","zh":"你有时间吗？"},{"r":"B","n":3,"en":"Yes, I do.","zh":"有的。"},{"r":"A","n":4,"en":"When does the train leave?","zh":"火车什么时候开？"},{"r":"B","n":4,"en":"At 5 PM.","zh":"下午五点。"},{"r":"A","n":5,"en":"How long does it take?","zh":"需要多长时间？"},{"r":"B","n":5,"en":"About an hour.","zh":"大约一个小时。"},{"r":"A","n":6,"en":"What day is it today?","zh":"今天星期几？"},{"r":"B","n":6,"en":"It's Monday.","zh":"星期一。"},{"r":"A","n":7,"en":"What's the date today?","zh":"今天几号？"},{"r":"B","n":7,"en":"It's June 10th.","zh":"6月10日。"},{"r":"A","n":8,"en":"Thank you for your help.","zh":"谢谢你的帮助。"},{"r":"B","n":8,"en":"You're welcome.","zh":"不客气。"}]},
+{"id":19,"title":"打车","lines":[{"r":"A","n":1,"en":"Taxi!","zh":"出租车！"},{"r":"B","n":1,"en":"Where to, sir?","zh":"先生，去哪里？"},{"r":"A","n":2,"en":"The airport, please.","zh":"去机场。"},{"r":"B","n":2,"en":"How long will it take?","zh":"大概要多久？"},{"r":"A","n":3,"en":"About 30 minutes.","zh":"大约30分钟。"},{"r":"B","n":3,"en":"How much is the fare?","zh":"车费多少？"},{"r":"A","n":4,"en":"About 60 yuan.","zh":"大约60元。"},{"r":"B","n":4,"en":"Please drive slowly.","zh":"请开慢一点。"},{"r":"A","n":5,"en":"No problem.","zh":"没问题。"},{"r":"B","n":5,"en":"Is there a lot of traffic?","zh":"路上堵车吗？"},{"r":"A","n":6,"en":"A little.","zh":"有一点。"},{"r":"B","n":6,"en":"Can I pay by card?","zh":"可以刷卡吗？"},{"r":"A","n":7,"en":"Yes, of course.","zh":"当然可以。"},{"r":"B","n":7,"en":"Here we are.","zh":"我们到了。"},{"r":"A","n":8,"en":"Thank you. Keep the change.","zh":"谢谢，不用找了。"},{"r":"B","n":8,"en":"Thanks a lot!","zh":"非常感谢！"}]},
+{"id":20,"title":"使用手机","lines":[{"r":"A","n":1,"en":"Can I use your phone?","zh":"我可以用你的手机吗？"},{"r":"B","n":1,"en":"Sure, here you go.","zh":"当然，给你。"},{"r":"A","n":2,"en":"What's the Wi-Fi password?","zh":"Wi-Fi密码是什么？"},{"r":"B","n":2,"en":"It's 12345678.","zh":"是12345678。"},{"r":"A","n":3,"en":"How do I download an app?","zh":"怎么下载应用？"},{"r":"B","n":3,"en":"From the app store.","zh":"从应用商店。"},{"r":"A","n":4,"en":"Can you take a photo for me?","zh":"能帮我拍张照吗？"},{"r":"B","n":4,"en":"Sure, smile!","zh":"好，笑一个！"},{"r":"A","n":5,"en":"How do I send a message?","zh":"怎么发消息？"},{"r":"B","n":5,"en":"Just press send.","zh":"按发送就行。"},{"r":"A","n":6,"en":"Is there a map app?","zh":"有地图应用吗？"},{"r":"B","n":6,"en":"Yes, Baidu Maps.","zh":"有，百度地图。"},{"r":"A","n":7,"en":"How do I call you?","zh":"怎么给你打电话？"},{"r":"B","n":7,"en":"Just dial my number.","zh":"直接拨我的号码。"},{"r":"A","n":8,"en":"Thank you!","zh":"谢谢！"},{"r":"B","n":8,"en":"No problem!","zh":"不客气！"}]},
+{"id":21,"title":"谈论宠物","lines":[{"r":"A","n":1,"en":"Do you have a pet?","zh":"你养宠物吗？"},{"r":"B","n":1,"en":"Yes, I have a dog.","zh":"是的，我养了一只狗。"},{"r":"A","n":2,"en":"What's its name?","zh":"它叫什么名字？"},{"r":"B","n":2,"en":"Its name is Lucky.","zh":"它叫Lucky。"},{"r":"A","n":3,"en":"How old is it?","zh":"它多大了？"},{"r":"B","n":3,"en":"It's two years old.","zh":"两岁了。"},{"r":"A","n":4,"en":"Is it friendly?","zh":"它友好吗？"},{"r":"B","n":4,"en":"Yes, very friendly.","zh":"很友好。"},{"r":"A","n":5,"en":"Does it like to play?","zh":"它喜欢玩吗？"},{"r":"B","n":5,"en":"Yes, it loves balls.","zh":"喜欢，它爱玩球。"},{"r":"A","n":6,"en":"Do you walk it every day?","zh":"你每天遛它吗？"},{"r":"B","n":6,"en":"Yes, twice a day.","zh":"每天两次。"},{"r":"A","n":7,"en":"Can I see a photo?","zh":"我能看看照片吗？"},{"r":"B","n":7,"en":"Sure, here it is.","zh":"当然，给。"},{"r":"A","n":8,"en":"It's so cute!","zh":"太可爱了！"},{"r":"B","n":8,"en":"Thank you!","zh":"谢谢！"}]},
+{"id":22,"title":"在超市","lines":[{"r":"A","n":1,"en":"Welcome! Can I help you?","zh":"欢迎光临！需要帮忙吗？"},{"r":"B","n":1,"en":"Where is the milk?","zh":"牛奶在哪里？"},{"r":"A","n":2,"en":"It's in aisle 3.","zh":"在3号通道。"},{"r":"B","n":2,"en":"Do you have fresh bread?","zh":"有新鲜的面包吗？"},{"r":"A","n":3,"en":"Yes, it's over there.","zh":"有的，在那边。"},{"r":"B","n":3,"en":"How much is the juice?","zh":"果汁多少钱？"},{"r":"A","n":4,"en":"10 yuan a bottle.","zh":"10元一瓶。"},{"r":"B","n":4,"en":"Is there a discount?","zh":"有折扣吗？"},{"r":"A","n":5,"en":"Yes, 20% off.","zh":"有，打八折。"},{"r":"B","n":5,"en":"I'll take two bottles.","zh":"我要两瓶。"},{"r":"A","n":6,"en":"Anything else?","zh":"还要别的吗？"},{"r":"B","n":6,"en":"Some fruit, please.","zh":"来点水果。"},{"r":"A","n":7,"en":"How would you like to pay?","zh":"怎么支付？"},{"r":"B","n":7,"en":"By WeChat Pay.","zh":"微信支付。"},{"r":"A","n":8,"en":"Here's your receipt.","zh":"这是您的收据。"},{"r":"B","n":8,"en":"Thank you!","zh":"谢谢！"}]},
+{"id":23,"title":"退货","lines":[{"r":"A","n":1,"en":"Can I return this?","zh":"我可以退货吗？"},{"r":"B","n":1,"en":"What's wrong with it?","zh":"有什么问题吗？"},{"r":"A","n":2,"en":"It's too small.","zh":"太小了。"},{"r":"B","n":2,"en":"Do you have the receipt?","zh":"有收据吗？"},{"r":"A","n":3,"en":"Yes, here it is.","zh":"有，给你。"},{"r":"B","n":3,"en":"Do you want a refund?","zh":"要退款吗？"},{"r":"A","n":4,"en":"Yes, please.","zh":"是的。"},{"r":"B","n":4,"en":"Or exchange it?","zh":"或者换一件？"},{"r":"A","n":5,"en":"I'd like an exchange.","zh":"我想换一件。"},{"r":"B","n":5,"en":"What size do you need?","zh":"你需要什么尺码？"},{"r":"A","n":6,"en":"Size L, please.","zh":"L码。"},{"r":"B","n":6,"en":"Here you are.","zh":"给您。"},{"r":"A","n":7,"en":"Can I try it on?","zh":"我可以试穿吗？"},{"r":"B","n":7,"en":"Of course.","zh":"当然可以。"},{"r":"A","n":8,"en":"It fits. Thank you.","zh":"很合适，谢谢。"},{"r":"B","n":8,"en":"You're welcome!","zh":"不客气！"}]},
+{"id":24,"title":"在银行","lines":[{"r":"A","n":1,"en":"Hello, how can I help you?","zh":"您好，需要办理什么业务？"},{"r":"B","n":1,"en":"I'd like to open an account.","zh":"我想开户。"},{"r":"A","n":2,"en":"Do you have your ID?","zh":"带身份证了吗？"},{"r":"B","n":2,"en":"Yes, here it is.","zh":"带了，给你。"},{"r":"A","n":3,"en":"What kind of account?","zh":"开什么账户？"},{"r":"B","n":3,"en":"A savings account.","zh":"储蓄账户。"},{"r":"A","n":4,"en":"How much to deposit?","zh":"存多少钱？"},{"r":"B","n":4,"en":"500 yuan.","zh":"500元。"},{"r":"A","n":5,"en":"Can I change money here?","zh":"这里可以换钱吗？"},{"r":"B","n":5,"en":"Yes, at counter 2.","zh":"可以，在2号窗口。"},{"r":"A","n":6,"en":"What's the exchange rate?","zh":"汇率是多少？"},{"r":"B","n":6,"en":"Please check the screen.","zh":"请看屏幕。"},{"r":"A","n":7,"en":"Can I use the ATM?","zh":"我可以用ATM机吗？"},{"r":"B","n":7,"en":"Yes, it's over there.","zh":"可以，在那边。"},{"r":"A","n":8,"en":"Thank you.","zh":"谢谢。"},{"r":"B","n":8,"en":"You're welcome!","zh":"不客气！"}]},
+{"id":25,"title":"在邮局","lines":[{"r":"A","n":1,"en":"Hello, I want to send a package.","zh":"你好，我想寄包裹。"},{"r":"B","n":1,"en":"Where to?","zh":"寄到哪里？"},{"r":"A","n":2,"en":"To Shanghai.","zh":"上海。"},{"r":"B","n":2,"en":"How heavy is it?","zh":"多重？"},{"r":"A","n":3,"en":"About 3 kilos.","zh":"大约3公斤。"},{"r":"B","n":3,"en":"By air or by sea?","zh":"空运还是海运？"},{"r":"A","n":4,"en":"By air, please.","zh":"空运。"},{"r":"B","n":4,"en":"How much is it?","zh":"多少钱？"},{"r":"A","n":5,"en":"50 yuan.","zh":"50元。"},{"r":"B","n":5,"en":"Can I buy stamps here?","zh":"这里能买邮票吗？"},{"r":"A","n":6,"en":"Yes, at that window.","zh":"可以，在那个窗口。"},{"r":"B","n":6,"en":"I also want to mail a letter.","zh":"我还想寄一封信。"},{"r":"A","n":7,"en":"Sure, put it in the box.","zh":"好的，放进邮筒就行。"},{"r":"B","n":7,"en":"How long will it take?","zh":"需要多长时间？"},{"r":"A","n":8,"en":"About 3 days.","zh":"大约3天。"},{"r":"B","n":8,"en":"Thanks a lot!","zh":"非常感谢！"}]},
+{"id":26,"title":"看医生","lines":[{"r":"A","n":1,"en":"What's wrong with you?","zh":"你怎么了？"},{"r":"B","n":1,"en":"I have a headache.","zh":"我头疼。"},{"r":"A","n":2,"en":"How long have you had it?","zh":"疼多久了？"},{"r":"B","n":2,"en":"Since yesterday.","zh":"从昨天开始。"},{"r":"A","n":3,"en":"Do you have a fever?","zh":"发烧吗？"},{"r":"B","n":3,"en":"I don't think so.","zh":"应该没有。"},{"r":"A","n":4,"en":"Let me check your temperature.","zh":"量一下体温。"},{"r":"B","n":4,"en":"Okay.","zh":"好的。"},{"r":"A","n":5,"en":"You have a cold.","zh":"你感冒了。"},{"r":"B","n":5,"en":"Do I need medicine?","zh":"需要吃药吗？"},{"r":"A","n":6,"en":"Yes, take this three times a day.","zh":"需要，这个药一天三次。"},{"r":"B","n":6,"en":"Should I rest?","zh":"需要休息吗？"},{"r":"A","n":7,"en":"Yes, drink more water.","zh":"需要，多喝水。"},{"r":"B","n":7,"en":"When should I come back?","zh":"什么时候复诊？"},{"r":"A","n":8,"en":"In three days.","zh":"三天后。"},{"r":"B","n":8,"en":"Thank you, doctor.","zh":"谢谢医生。"}]},
+{"id":27,"title":"约会","lines":[{"r":"A","n":1,"en":"Are you free tonight?","zh":"你今晚有空吗？"},{"r":"B","n":1,"en":"Yes, I am.","zh":"有空。"},{"r":"A","n":2,"en":"Would you like to have dinner?","zh":"一起吃晚饭好吗？"},{"r":"B","n":2,"en":"I'd love to.","zh":"我很乐意。"},{"r":"A","n":3,"en":"What time?","zh":"几点？"},{"r":"B","n":3,"en":"How about 7 o'clock?","zh":"7点怎么样？"},{"r":"A","n":4,"en":"Where should we meet?","zh":"在哪里见面？"},{"r":"B","n":4,"en":"At the restaurant.","zh":"在餐厅。"},{"r":"A","n":5,"en":"What would you like to eat?","zh":"你想吃什么？"},{"r":"B","n":5,"en":"Anything is fine.","zh":"都可以。"},{"r":"A","n":6,"en":"Do you like Italian food?","zh":"你喜欢意大利菜吗？"},{"r":"B","n":6,"en":"Yes, I do.","zh":"喜欢。"},{"r":"A","n":7,"en":"Let's meet at 6:30.","zh":"我们6点半见。"},{"r":"B","n":7,"en":"Sure, see you then.","zh":"好，到时候见。"},{"r":"A","n":8,"en":"See you!","zh":"再见！"},{"r":"B","n":8,"en":"See you!","zh":"再见！"}]},
+{"id":28,"title":"天气预报","lines":[{"r":"A","n":1,"en":"What's the weather like today?","zh":"今天天气怎么样？"},{"r":"B","n":1,"en":"It's cloudy.","zh":"多云。"},{"r":"A","n":2,"en":"Will it rain?","zh":"会下雨吗？"},{"r":"B","n":2,"en":"Maybe in the afternoon.","zh":"下午可能会。"},{"r":"A","n":3,"en":"Do I need an umbrella?","zh":"需要带伞吗？"},{"r":"B","n":3,"en":"Yes, better take one.","zh":"最好带一把。"},{"r":"A","n":4,"en":"How about tomorrow?","zh":"明天呢？"},{"r":"B","n":4,"en":"It will be sunny.","zh":"明天晴天。"},{"r":"A","n":5,"en":"What's the temperature?","zh":"温度多少？"},{"r":"B","n":5,"en":"About 30 degrees.","zh":"大约30度。"},{"r":"A","n":6,"en":"Is it hot?","zh":"热吗？"},{"r":"B","n":6,"en":"Yes, quite hot.","zh":"挺热的。"},{"r":"A","n":7,"en":"Let's go swimming.","zh":"我们去游泳吧。"},{"r":"B","n":7,"en":"Good idea!","zh":"好主意！"},{"r":"A","n":8,"en":"Don't forget sunscreen.","zh":"别忘了防晒霜。"},{"r":"B","n":8,"en":"I won't!","zh":"不会忘的！"}]},
+{"id":29,"title":"谈论新闻","lines":[{"r":"A","n":1,"en":"Did you watch the news?","zh":"你看新闻了吗？"},{"r":"B","n":1,"en":"Yes, I did.","zh":"看了。"},{"r":"A","n":2,"en":"What's the big story?","zh":"有什么大新闻？"},{"r":"B","n":2,"en":"A new bridge opened.","zh":"一座新桥开通了。"},{"r":"A","n":3,"en":"Really? Where?","zh":"真的吗？在哪里？"},{"r":"B","n":3,"en":"In the city center.","zh":"市中心。"},{"r":"A","n":4,"en":"What else is new?","zh":"还有什么新闻？"},{"r":"B","n":4,"en":"A football match is coming.","zh":"有一场足球赛要举行。"},{"r":"A","n":5,"en":"When is it?","zh":"什么时候？"},{"r":"B","n":5,"en":"This weekend.","zh":"这个周末。"},{"r":"A","n":6,"en":"Who is playing?","zh":"哪两个队？"},{"r":"B","n":6,"en":"China vs Japan.","zh":"中国对日本。"},{"r":"A","n":7,"en":"I want to watch it.","zh":"我想去看。"},{"r":"B","n":7,"en":"Let's watch together.","zh":"我们一起看吧。"},{"r":"A","n":8,"en":"Great!","zh":"太好了！"},{"r":"B","n":8,"en":"See you then.","zh":"到时候见。"}]},
+{"id":30,"title":"道别","lines":[{"r":"A","n":1,"en":"It's getting late.","zh":"天晚了。"},{"r":"B","n":1,"en":"Yes, I should go.","zh":"是的，我该走了。"},{"r":"A","n":2,"en":"Thank you for coming.","zh":"谢谢你的到来。"},{"r":"B","n":2,"en":"Thank you for having me.","zh":"谢谢你的款待。"},{"r":"A","n":3,"en":"It was a nice day.","zh":"今天过得很愉快。"},{"r":"B","n":3,"en":"Yes, it was fun.","zh":"是的，很有趣。"},{"r":"A","n":4,"en":"See you tomorrow.","zh":"明天见。"},{"r":"B","n":4,"en":"See you then.","zh":"到时候见。"},{"r":"A","n":5,"en":"Take care.","zh":"保重。"},{"r":"B","n":5,"en":"You too.","zh":"你也是。"},{"r":"A","n":6,"en":"Call me sometime.","zh":"有空给我打电话。"},{"r":"B","n":6,"en":"I will.","zh":"我会的。"},{"r":"A","n":7,"en":"Have a safe trip.","zh":"路上注意安全。"},{"r":"B","n":7,"en":"Thanks. Goodbye!","zh":"谢谢，再见！"},{"r":"A","n":8,"en":"Goodbye!","zh":"再见！"},{"r":"B","n":8,"en":"Goodbye!","zh":"再见！"}]}
+];
+
+/* ================= 状态 ================= */
+let curClass = null, curMode = 'practice';
+let remaining = [], drawn = [], usedScenes = [], nextScene = 1;
+let sceneMode = 'seq', learnedN = 30;
+let spinning = false, soundOn = false;
+
+const KEY = (c,m) => 'et3_' + c + '_' + m;
+const $ = id => document.getElementById(id);
+const sceneById = id => SCENES.find(s => s.id === id);
+const sceneTitle = id => '场景' + id + '：' + sceneById(id).title;
+
+/* ================= 界面一：选班 ================= */
+function renderChoose(){
+  const grid = $('classGrid');
+  grid.innerHTML = '';
+  Object.keys(CLASS_DATA).forEach(name => {
+    const n = CLASS_DATA[name].length, num = name.replace(/\D/g,'');
+    const card = document.createElement('div');
+    card.className = 'class-card';
+    card.onclick = () => enterClass(name);
+    card.innerHTML = `<div class="num">${num}<small> 班</small></div>
+      <div class="cnt">共 <b>${n}</b> 人</div>
+      <div class="go">进入 →</div>`;
+    grid.appendChild(card);
+  });
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('show'));
+  $(id).classList.add('show');
+  window.scrollTo(0,0);
+}
+
+function enterClass(name){
+  curClass = name;
+  $('boardClsBadge').textContent = name;
+  $('boardClsTag').textContent = name;
+  showScreen('screenBoard');
+}
+
+function goChoose(){ showScreen('screenChoose'); }
+
+/* ================= 界面二：板块选择 ================= */
+function enterMode(mode){
+  curMode = mode;
+  const saved = localStorage.getItem(KEY(curClass, mode));
+  if (saved){
+    try{
+      const st = JSON.parse(saved);
+      drawn = Array.isArray(st.d) ? st.d.filter(p => CLASS_DATA[curClass].includes(p)) : [];
+      usedScenes = Array.isArray(st.u) ? st.u : [];
+      nextScene = (typeof st.n === 'number') ? st.n : 1;
+    }catch(e){ resetState(); }
+  } else resetState();
+  remaining = CLASS_DATA[curClass].filter(p => !drawn.includes(p));
+
+  $('workClsBadge').textContent = curClass + (mode === 'practice' ? ' · 平时练习' : ' · 考试');
+  $('stageLabel').textContent = mode === 'practice' ? '— 练 习 抽 签 台 —' : '— 考 试 抽 签 台 —';
+  $('ctrlPractice').style.display = mode === 'practice' ? 'block' : 'none';
+  document.getElementById('screenWork').classList.toggle('exam', mode === 'exam');
+  syncSoundBtn();
+  renderWork();
+  showScreen('screenWork');
+}
+
+function resetState(){
+  drawn = []; usedScenes = []; nextScene = 1;
+}
+
+function goBoard(){ showScreen('screenBoard'); }
+
+/* ================= 工作界面渲染 ================= */
+function renderWork(){
+  $('remainNum').textContent = remaining.length;
+  $('histCount').textContent = drawn.length;
+  const list = $('historyList');
+  if (drawn.length === 0){
+    list.innerHTML = '<span class="history-empty">尚未开始抽签</span>';
+  } else {
+    list.innerHTML = drawn.map((rec,i) => {
+      const p = typeof rec === 'string' ? rec : rec.p;
+      const s = typeof rec === 'string' ? null : rec.s;
+      const sc = s ? `<span class="sc">场景${s}</span>` : '';
+      return `<span class="h-chip" onclick="viewHistory(${i})"><span class="idx">${i+1}</span>${p}${sc}</span>`;
+    }).join('');
+  }
+  const btn = $('drawBtn');
+  const peopleDone = remaining.length === 0;
+  const scenesDone = curMode === 'practice'
+    ? usedScenes.length >= learnedN
+    : usedScenes.length >= SCENES.length;
+  if (peopleDone && scenesDone){
+    btn.textContent = '🏁　人员与情景均已抽完';
+    btn.disabled = true;
+    $('subHint').textContent = '已全部抽完 · 可重置本板块重新开始';
+  } else if (peopleDone){
+    btn.textContent = '👥　人员已抽完（情景剩余）';
+    btn.disabled = true;
+    $('subHint').textContent = '本班人员已全部抽完 · 可重置本板块';
+  } else if (scenesDone){
+    btn.textContent = '🎬　情景已抽完（人员剩余）';
+    btn.disabled = true;
+    $('subHint').textContent = '情景已全部用完 · 可重置本板块';
+  } else {
+    btn.textContent = '🎲　开 始 抽 签';
+    btn.disabled = false;
+    $('subHint').textContent = '每次抽取 1 人 + 分配 1 个情景';
+  }
+}
+
+/* ================= 滑块与模式 ================= */
+function initSlider(){
+  const slider = $('sceneCountSlider');
+  slider.oninput = () => {
+    learnedN = parseInt(slider.value);
+    $('sceneCountNum').textContent = learnedN;
+    $('rangeDesc').textContent = '场景 1 – ' + learnedN;
+  };
+}
+function setMode(m){
+  sceneMode = m;
+  $('segSeq').classList.toggle('on', m === 'seq');
+  $('segRand').classList.toggle('on', m === 'rand');
+}
+
+/* ================= 抽签 ================= */
+function pickScene(){
+  if (curMode === 'exam'){
+    // 考试：全部场景随机，不重复
+    const pool = SCENES.map(s => s.id).filter(id => !usedScenes.includes(id));
+    if (pool.length === 0) return null;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+  // 平时练习
+  if (sceneMode === 'seq'){
+    // 顺序：从 nextScene 开始，超出已学范围重置
+    while (usedScenes.includes(nextScene) && nextScene <= learnedN) nextScene++;
+    if (nextScene > learnedN){ nextScene = 1; }
+    while (usedScenes.includes(nextScene)) nextScene++;
+    if (nextScene > learnedN) return null;   // 范围内全用过
+    return nextScene;
+  }
+  // 随机
+  const pool = [];
+  for (let i = 1; i <= learnedN; i++) if (!usedScenes.includes(i)) pool.push(i);
+  if (pool.length === 0) return null;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function startDraw(){
+  if (spinning) return;
+  const sc = pickScene();
+  if (remaining.length === 0 || sc === null){ renderWork(); return; }
+  spinning = true;
+  $('drawBtn').disabled = true;
+  $('resultLine').innerHTML = '&nbsp;';
+  $('sceneAssign').innerHTML = '&nbsp;';
+  $('scriptWrap').style.display = 'none';
+  const nameEl = $('nameDisplay');
+  nameEl.classList.remove('winner');
+  const stage = $('stage');
+  stage.classList.remove('sweep');
+
+  const winner = remaining[Math.floor(Math.random() * remaining.length)];
+  const pool = remaining.slice();
+  const FAST = 18, SLOW = 9;
+  let step = 0, interval = 50;
+
+  function tickOne(){
+    nameEl.textContent = pool[Math.floor(Math.random() * pool.length)];
+    playTick();
+    step++;
+    if (step < FAST) setTimeout(tickOne, 50);
+    else if (step < FAST + SLOW){ interval += 45; setTimeout(tickOne, interval); }
+    else settle();
+  }
+  setTimeout(tickOne, 50);
+
+  function settle(){
+    nameEl.textContent = winner;
+    nameEl.classList.add('winner');
+    stage.classList.add('sweep');
+    playWinner();
+    burstParticles(nameEl);
+    $('sceneAssign').innerHTML = '🎬 情景：<b>' + sceneTitle(sc) + '</b>';
+    $('resultLine').innerHTML = '✨ 恭喜 ' + winner + ' 抽中！✨';
+    $('subHint').textContent = '点击按钮抽取下一位';
+    remaining = remaining.filter(p => p !== winner);
+    usedScenes.push(sc);
+    nextScene = sc + 1;
+    drawn.push({p: winner, s: sc});
+    localStorage.setItem(KEY(curClass, curMode), JSON.stringify({d: drawn, u: usedScenes, n: nextScene}));
+    renderScript(sc, curMode === 'exam');
+    renderWork();
+    spinning = false;
+  }
+}
+
+/* ================= 台词渲染 ================= */
+function renderScript(sceneId, zhOnly){
+  const sc = sceneById(sceneId);
+  if (!sc) return;
+  $('scriptTitle').textContent = sceneTitle(sceneId) + (zhOnly ? ' · 仅中文' : ' · 中英对照');
+  const body = $('scriptBody');
+  body.innerHTML = '';
+  sc.lines.forEach(l => {
+    const d = document.createElement('div');
+    d.className = 'line ' + (l.r === 'A' ? 'role-a' : 'role-b');
+    d.innerHTML = `<span class="spk">${l.r}</span>
+      <div class="txt"><div class="en">${l.en}</div><div class="zh">${l.zh}</div></div>`;
+    body.appendChild(d);
+  });
+  $('scriptWrap').style.display = 'block';
+}
+
+function viewHistory(i){
+  const rec = drawn[i];
+  if (!rec || !rec.s) return;
+  renderScript(rec.s, curMode === 'exam');
+  $('scriptTitle').textContent = sceneTitle(rec.s) + ' · ' + rec.p + ' 回看' + (curMode === 'exam' ? '（仅中文）' : '（中英对照）');
+  $('scriptWrap').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+/* ================= 重置 ================= */
+function resetMode(){
+  if (spinning) return;
+  const label = curClass + ' · ' + (curMode === 'practice' ? '平时练习' : '考试');
+  if (!confirm('确认重置「' + label + '」的抽签记录？人员与情景都将恢复。')) return;
+  resetState();
+  localStorage.removeItem(KEY(curClass, curMode));
+  $('nameDisplay').textContent = '—';
+  $('sceneAssign').innerHTML = '&nbsp;';
+  $('resultLine').innerHTML = '&nbsp;';
+  $('scriptWrap').style.display = 'none';
+  remaining = CLASS_DATA[curClass].slice();
+  $('subHint').textContent = '已重置 · 点击按钮开始抽签';
+  renderWork();
+}
+
+/* ================= 音效 ================= */
+let audioCtx = null;
+function ctx(){ if (!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+function syncSoundBtn(){
+  const b = $('soundBtn');
+  b.textContent = soundOn ? '🔊' : '🔇';
+  b.classList.toggle('on', soundOn);
+}
+function toggleSound(){
+  soundOn = !soundOn;
+  syncSoundBtn();
+  if (soundOn){ ctx(); playTick(); }
+}
+function playTick(){
+  if (!soundOn) return;
+  try{
+    const c = ctx(), t = c.currentTime;
+    const o = c.createOscillator(), g = c.createGain();
+    o.type='square'; o.frequency.setValueAtTime(880,t);
+    g.gain.setValueAtTime(.06,t); g.gain.exponentialRampToValueAtTime(.001,t+.04);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t+.05);
+  }catch(e){}
+}
+function playWinner(){
+  if (!soundOn) return;
+  try{
+    const c = ctx(), t = c.currentTime;
+    const o1=c.createOscillator(), g1=c.createGain();
+    o1.type='sine'; o1.frequency.setValueAtTime(150,t);
+    o1.frequency.exponentialRampToValueAtTime(50,t+.3);
+    g1.gain.setValueAtTime(.8,t); g1.gain.exponentialRampToValueAtTime(.001,t+.35);
+    o1.connect(g1).connect(c.destination); o1.start(t); o1.stop(t+.38);
+    const o2=c.createOscillator(), g2=c.createGain();
+    o2.type='triangle'; o2.frequency.setValueAtTime(1318,t+.1); o2.frequency.setValueAtTime(1760,t+.32);
+    g2.gain.setValueAtTime(.001,t+.1); g2.gain.exponentialRampToValueAtTime(.25,t+.14);
+    g2.gain.exponentialRampToValueAtTime(.001,t+.9);
+    o2.connect(g2).connect(c.destination); o2.start(t+.1); o2.stop(t+1);
+  }catch(e){}
+}
+
+/* ================= 粒子 ================= */
+function burstParticles(el){
+  const rect = el.getBoundingClientRect();
+  const stage = $('stage'), sRect = stage.getBoundingClientRect();
+  const cx = rect.left - sRect.left + rect.width/2, cy = rect.top - sRect.top + rect.height/2;
+  for (let i=0;i<42;i++){
+    const p = document.createElement('span');
+    p.className='particle';
+    const ang = Math.random()*Math.PI*2, dist = 70+Math.random()*150;
+    p.style.left = cx+'px'; p.style.top = cy+'px';
+    p.style.setProperty('--dx', Math.cos(ang)*dist+'px');
+    p.style.setProperty('--dy', Math.sin(ang)*dist+'px');
+    p.style.animationDelay = (Math.random()*.12)+'s';
+    p.style.width = p.style.height = (5+Math.random()*6)+'px';
+    p.style.opacity = .6+Math.random()*.6;
+    stage.appendChild(p);
+    setTimeout(()=>p.remove(), 1200);
+  }
+}
+
+/* ================= 后台终端 ================= */
+const termHelp = [
+  '<span class="t-ok">可用命令：</span>',
+  '  people         查看全部班级人员名单',
+  '  classes        查看班级统计',
+  '  scenes         查看情景数据统计',
+  '  status         查看当前各板块抽签进度',
+  '  reset &lt;班&gt;   清空指定班级全部记录（1/2/3/all）',
+  '  clear          清屏',
+  '  exit           关闭终端'
+];
+function termPrint(html){
+  const body = $('termBody');
+  const d = document.createElement('div');
+  d.innerHTML = html;
+  body.appendChild(d);
+  body.scrollTop = body.scrollHeight;
+}
+function termInit(){
+  termPrint('<span class="t-dim">中铝英语培训 · 后台终端 v1.0</span>');
+  termPrint('<span class="t-dim">输入 help 查看命令列表</span>');
+  termPrint('');
+}
+function openTerm(){
+  $('termMask').classList.add('show');
+  const body = $('termBody');
+  if (body.children.length === 0) termInit();
+  setTimeout(()=>$('termInput').focus(), 50);
+}
+function closeTerm(){ $('termMask').classList.remove('show'); }
+function termExec(){
+  const input = $('termInput');
+  const cmd = input.value.trim();
+  input.value = '';
+  termPrint('<span class="t-dim">admin@training:~$</span> ' + (cmd || ''));
+  if (!cmd) return;
+  const parts = cmd.split(/\s+/);
+  const c = parts[0].toLowerCase();
+  switch(c){
+    case 'help':
+      termHelp.forEach(l=>termPrint(l));
+      break;
+    case 'people':
+      Object.keys(CLASS_DATA).forEach(k=>{
+        termPrint('<span class="t-ok">'+k+'（'+CLASS_DATA[k].length+'人）</span>');
+        termPrint('<span class="t-dim">' + CLASS_DATA[k].join(' / ') + '</span>');
+      });
+      break;
+    case 'classes':
+      Object.keys(CLASS_DATA).forEach(k=>{
+        termPrint('<span class="t-ok">'+k+'</span>　共 <b>'+CLASS_DATA[k].length+'</b> 人');
+      });
+      termPrint('<span class="t-dim">总计 ' + Object.values(CLASS_DATA).reduce((a,b)=>a+b.length,0) + ' 人</span>');
+      break;
+    case 'scenes':
+      termPrint('<span class="t-ok">情景库：共 ' + SCENES.length + ' 个</span>');
+      SCENES.forEach(s=>termPrint('  <span class="t-dim">'+s.id+'. '+s.title+'（'+s.lines.length+' 句）</span>'));
+      break;
+    case 'status':{
+      Object.keys(CLASS_DATA).forEach(k=>{
+        termPrint('<span class="t-ok">'+k+'</span>');
+        ['practice','exam'].forEach(m=>{
+          const st = JSON.parse(localStorage.getItem(KEY(k,m)) || 'null');
+          const total = CLASS_DATA[k].length;
+          const got = st ? st.d.length : 0;
+          const used = st ? (st.u||[]).length : 0;
+          const nm = m==='practice'?'平时练习':'考试';
+          termPrint('  <span class="t-dim">'+nm+': 已抽 '+got+'/'+total+' 人 · 已用情景 '+used+' 个'+(m==='practice'?'（范围 '+learnedN+'）':'（共 30）')+'</span>');
+        });
+      });
+      break;
+    }
+    case 'reset':{
+      const t = (parts[1]||'').toLowerCase();
+      const targets = t==='all' ? Object.keys(CLASS_DATA)
+        : Object.keys(CLASS_DATA).filter(k=>k.includes(t));
+      if (targets.length === 0){
+        termPrint('<span class="t-err">未找到班级：' + (parts[1]||'') + '（可用 1/2/3/all）</span>');
+        break;
+      }
+      targets.forEach(k=>{
+        localStorage.removeItem(KEY(k,'practice'));
+        localStorage.removeItem(KEY(k,'exam'));
+      });
+      termPrint('<span class="t-ok">已清空：' + targets.join('、') + ' 的全部抽签记录</span>');
+      break;
+    }
+    case 'clear':
+      $('termBody').innerHTML = '';
+      break;
+    case 'exit':
+    case 'quit':
+      closeTerm();
+      break;
+    default:
+      termPrint('<span class="t-err">未知命令：'+c+'（输入 help 查看）</span>');
+  }
+}
+
+/* ================= 启动 ================= */
+renderChoose();
+initSlider();
+setMode('seq');
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && $('screenWork').classList.contains('show') && !spinning && !$('drawBtn').disabled){
+    e.preventDefault(); startDraw();
+  }
+  if (e.key === 'Escape') closeTerm();
+});
+</script>
+</body>
+</html>
