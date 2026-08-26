@@ -825,13 +825,13 @@ function startDraw(){
       $('pairSep').style.display = 'block';
       $('nameTag1').textContent = curClass;
       $('nameTag2').textContent = (pairMode === 'cross' ? partnerClass : curClass);
-      $('sceneAssign').innerHTML = '🎬 情景：<b>' + sceneTitle(sc) + '</b>' + (scObj.bound ? '<span style="color:var(--gold);font-size:.7em;margin-left:8px">🔗 绑定</span>' : '');
+      $('sceneAssign').innerHTML = '🎬 情景：<b>' + sceneTitle(sc) + '</b>';
       $('resultLine').innerHTML = (sceneReset ? '🔄 情景池已自动重置 · ' : '') + '✨ 恭喜 ' + w1 + ' 与 ' + w2 + ' 抽中！✨';
     } else {
       $('nameBox2').style.display = 'none';
       $('pairSep').style.display = 'none';
       $('nameTag1').textContent = curClass;
-      $('sceneAssign').innerHTML = '🎬 情景：<b>' + sceneTitle(sc) + '</b>' + (scObj.bound ? '<span style="color:var(--gold);font-size:.7em;margin-left:8px">🔗 绑定</span>' : '');
+      $('sceneAssign').innerHTML = '🎬 情景：<b>' + sceneTitle(sc) + '</b>';
       $('resultLine').innerHTML = (sceneReset ? '🔄 情景池已自动重置 · ' : '') + '✨ 恭喜 ' + w1 + ' 抽中！✨';
     }
     $('subHint').textContent = '点击按钮抽取下一位';
