@@ -751,6 +751,8 @@ const termHelp = [
   '  bind &lt;姓名&gt; &lt;序号&gt;  把某人固定绑定到某情景（抽中即分配该情景）',
   '  binds          查看全部绑定',
   '  bind reset     清除全部绑定',
+  '  export         导出全部设置（权重+绑定 JSON，可备份/换设备）',
+  '  import &lt;JSON&gt;  粘贴 export 导出的数据恢复设置',
   '  reset &lt;班&gt;   清空指定班级全部记录（1/2/3/all）',
   '  clear          清屏',
   '  exit           关闭终端'
@@ -887,6 +889,32 @@ function termExec(){
         break;
       }
       keys.forEach(k=>termPrint('<span class="t-ok">'+k+'</span>　→　场景'+b[k]+'（'+sceneById(b[k]).title+'）'));
+      break;
+    }
+    case 'export':{
+      const data = JSON.stringify({w: getWeights(), b: getBinds()});
+      termPrint('<span class="t-ok">复制下面这行保存（导入时输入 import 后粘贴）：</span>');
+      termPrint('<span class="t-ok">' + data + '</span>');
+      break;
+    }
+    case 'import':{
+      const json = cmd.replace(/^import\s+/, '');
+      if (!json || json === 'import'){
+        termPrint('<span class="t-err">用法：import &lt;JSON&gt;（用 export 导出的内容）</span>');
+        break;
+      }
+      try{
+        const d = JSON.parse(json);
+        if (d && typeof d === 'object'){
+          if (d.w && typeof d.w === 'object') saveWeights(d.w);
+          if (d.b && typeof d.b === 'object') saveBinds(d.b);
+          termPrint('<span class="t-ok">导入成功：权重 ' + Object.keys(d.w||{}).length + ' 条，绑定 ' + Object.keys(d.b||{}).length + ' 条</span>');
+        } else {
+          termPrint('<span class="t-err">导入失败：数据格式不正确</span>');
+        }
+      }catch(e){
+        termPrint('<span class="t-err">导入失败：JSON 解析错误，请完整复制 export 输出的整行</span>');
+      }
       break;
     }
     case 'reset':{
