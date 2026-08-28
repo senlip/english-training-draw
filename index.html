@@ -807,12 +807,24 @@ function pickWeightedPerson(remaining){
   return cand[cand.length - 1];
 }
 
-/* 绑定优先：两人中任一有未用绑定则用之，否则正常分配 */
+/* 绑定情景是否在当前抽取池内（范围/多选） */
+function bindInPool(bind){
+  if (sceneSource === 'range'){
+    const lo = Math.min(startN, endN), hi = Math.max(startN, endN);
+    return bind >= lo && bind <= hi;
+  }
+  if (sceneSource === 'pick'){
+    return multiScenes.includes(bind);
+  }
+  return bind >= 1 && bind <= SCENES.length;
+}
+
+/* 绑定优先：两人中任一有未用且在当前情景池内的绑定则用之，否则随机 */
 function pickSceneFor(p1, p2){
   const persons = p2 ? [p1, p2] : [p1];
   for (const p of persons){
     const bind = getBinds()[p];
-    if (bind && bind >= 1 && bind <= SCENES.length && !usedScenes.includes(bind)){
+    if (bind && bindInPool(bind) && !usedScenes.includes(bind)){
       return {id: bind, bound: true};
     }
   }
