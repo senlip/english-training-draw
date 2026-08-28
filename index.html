@@ -617,7 +617,11 @@ function renderWork(){
     }).join('');
   }
   const btn = $('drawBtn');
-  if (isExam){
+  if (sceneSource === 'pick' && multiScenes.length === 0){
+    btn.textContent = '⚠　请先选择情景';
+    btn.disabled = true;
+    $('subHint').textContent = '在多选面板点击勾选至少 1 个情景';
+  } else if (isExam){
     if (pairMode === 'intra'){
       const short = remaining.length < 2;
       if (short){
@@ -669,20 +673,21 @@ function initRange(){
   s.oninput = sync;
   e.oninput = sync;
   sync();
-  // 指定情景：块状网格，点击多选（默认全选）
+  // 指定情景：块状网格，点击多选（默认不选，手动选择）
   const grid = $('singleGrid');
   grid.innerHTML = '';
-  multiScenes = SCENES.map(s => s.id);
+  multiScenes = [];
   SCENES.forEach(sc => {
     const chip = document.createElement('button');
     chip.type = 'button';
-    chip.className = 'scene-chip on';
+    chip.className = 'scene-chip';
     chip.innerHTML = '场景' + sc.id + '<small>' + sc.title + '</small>';
     chip.onclick = () => {
       const on = chip.classList.toggle('on');
       if (on) multiScenes.push(sc.id);
       else multiScenes = multiScenes.filter(id => id !== sc.id);
       updateMultiDesc();
+      renderWork();
     };
     grid.appendChild(chip);
   });
@@ -703,6 +708,7 @@ function setSceneSource(m){
   $('rangeEndRow').style.display = isPick ? 'none' : 'flex';
   $('singleRow').style.display = isPick ? 'flex' : 'none';
   $('singleGrid').style.display = isPick ? 'grid' : 'none';
+  renderWork();
 }
 function setMode(m){
   sceneMode = m;
