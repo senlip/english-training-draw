@@ -618,16 +618,29 @@ function renderWork(){
   }
   const btn = $('drawBtn');
   if (isExam){
-    const short = pairMode === 'intra' ? remaining.length < 2
-      : (remaining.length < 1 || partnerRemain.length < 1);
-    if (short){
-      btn.textContent = pairMode === 'intra' ? '👥　本班剩余不足 2 人' : '👥　某班人员已抽完';
-      btn.disabled = true;
-      $('subHint').textContent = pairMode === 'intra' ? '班内需 2 人一组 · 可重置本板块' : '跨班需两班各剩 1 人 · 可重置本板块';
+    if (pairMode === 'intra'){
+      const short = remaining.length < 2;
+      if (short){
+        btn.textContent = '👥　本班剩余不足 2 人';
+        btn.disabled = true;
+        $('subHint').textContent = '班内需 2 人一组 · 可重置本板块';
+      } else {
+        btn.textContent = '🎲　抽 一 组（2 人）';
+        btn.disabled = false;
+        $('subHint').textContent = '每次抽取 2 人组成一组 + 分配 1 个情景';
+      }
     } else {
-      btn.textContent = '🎲　抽 一 组（2 人）';
-      btn.disabled = false;
-      $('subHint').textContent = '每次抽取 2 人组成一组 + 分配 1 个情景';
+      // 跨班：任一方有剩余即可继续（人数不对等时自动复用对班已抽人员）
+      const anyLeft = remaining.length > 0 || partnerRemain.length > 0;
+      if (!anyLeft){
+        btn.textContent = '🏁　两班人员均已抽完';
+        btn.disabled = true;
+        $('subHint').textContent = '跨班配对已全部完成 · 可重置本板块';
+      } else {
+        btn.textContent = '🎲　抽 一 组（2 人）';
+        btn.disabled = false;
+        $('subHint').textContent = '每次抽取 2 人组成一组 + 分配 1 个情景';
+      }
     }
   } else {
     if (remaining.length === 0){
@@ -817,18 +830,36 @@ function pickScene(){
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-/* 考试抽一组两人：班内抽 2 人 / 跨班各抽 1 人 */
+/* 考试抽一组两人：班内抽 2 人 / 跨班各抽 1 人（人数不对等时剩余方复用对班已抽人员） */
 function pickPair(){
   if (pairMode === 'intra'){
     if (remaining.length < 2) return null;
     const p1 = pickWeightedPerson(remaining);
     const p2 = pickWeightedPerson(remaining.filter(p => p !== p1));
-    return {p1, p2, newRemB: null};
+    return {p1, p2, newRemB: null, reused: false};
   }
-  if (remaining.length < 1 || partnerRemain.length < 1) return null;
-  const p1 = pickWeightedPerson(remaining);
+  // 跨班：任一方有剩余即可继续
+  const can1 = remaining.length > 0, can2 = partnerRemain.length > 0;
+  if (!can1 && !can2) return null;
+  if (can1 && can2){
+    // 双方都有剩余：正常各抽 1
+    const p1 = pickWeightedPerson(remaining);
+    const p2 = pickWeightedPerson(partnerRemain);
+    return {p1, p2, newRemB: partnerRemain.filter(p => p !== p2), reused: false};
+  }
+  // 人数不对等：剩余方抽 1，另一方从已抽人员池中复用抽取（不重复限制除外）
+  const homeDrawn = drawn.map(r => r.p1).filter(Boolean);        // 本班已抽
+  const partDrawn = drawn.map(r => r.p2).filter(Boolean);        // 对班已抽
+  if (can1){
+    const p1 = pickWeightedPerson(remaining);
+    const pool = partDrawn.length > 0 ? partDrawn : CLASS_DATA[partnerClass];
+    const p2 = pickWeightedPerson(pool);
+    return {p1, p2, newRemB: [], reused: true};
+  }
   const p2 = pickWeightedPerson(partnerRemain);
-  return {p1, p2, newRemB: partnerRemain.filter(p => p !== p2)};
+  const pool = homeDrawn.length > 0 ? homeDrawn : CLASS_DATA[curClass];
+  const p1 = pickWeightedPerson(pool);
+  return {p1, p2, newRemB: partnerRemain.filter(p => p !== p2), reused: true};
 }
 
 function startDraw(){
@@ -1068,6 +1099,7 @@ const termHelp = [
   '  classes        查看班级统计',
   '  scenes         查看情景数据统计',
   '  status         查看当前各板块抽签进度',
+  '  pair           查看考试跨班配对规则与当前状态（仅本地可见）',
   '  weight &lt;姓名&gt; &lt;N&gt;   设置某人抽中权重（默认1，0=不参与，越大越易中）',
   '  weights        查看全部权重设置',
   '  weight reset   全部权重恢复为 1',
@@ -1128,6 +1160,18 @@ function termExec(){
       termPrint('<span class="t-ok">情景库：共 ' + SCENES.length + ' 个</span>');
       SCENES.forEach(s=>termPrint('  <span class="t-dim">'+s.id+'. '+s.title+'（'+s.lines.length+' 句）</span>'));
       break;
+    case 'pair':{
+      termPrint('<span class="t-ok">考试跨班配对规则（仅本终端可见）：</span>');
+      termPrint('  ① 固定搭档班：跨班只与所选搭档班配对，每轮各抽 1 人组队');
+      termPrint('  ② 情景分配：绑定（锁定）优先 → 随机其次，锁定场景被用过则自动回退随机');
+      termPrint('  ③ 人数不对等：剩余方从对班已抽人员中复用配对，不从自己班抽取');
+      if (curClass && curMode === 'exam'){
+        const st = JSON.parse(localStorage.getItem(KEY(curClass,'exam')) || 'null');
+        const pk = st && st.pair;
+        termPrint('  <span class="t-dim">当前：'+curClass+(pk && pk.mode==='cross' ? ' ↔ '+pk.partner : '（班内）')+' · 本班剩余 '+remaining.length+' · 对班剩余 '+(pk && pk.remB ? pk.remB.length : partnerRemain.length)+'</span>');
+      }
+      break;
+    }
     case 'status':{
       Object.keys(CLASS_DATA).forEach(k=>{
         termPrint('<span class="t-ok">'+k+'</span>');
