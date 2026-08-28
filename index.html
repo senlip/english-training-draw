@@ -328,7 +328,7 @@
         <span class="ctrl-label">情景来源</span>
         <div class="seg" id="srcSeg">
           <button id="segSrcRange" class="on" onclick="setSceneSource('range')">范围</button>
-          <button id="segSrcSingle" onclick="setSceneSource('single')">指定</button>
+          <button id="segSrcSingle" onclick="setSceneSource('pick')">多选</button>
         </div>
       </div>
       <div class="ctrl-row" id="rangeBlock">
@@ -345,7 +345,7 @@
         <span class="range-num" id="rangeNumEnd">30</span>
       </div>
       <div class="ctrl-row" id="singleRow" style="display:none">
-        <span class="ctrl-label">指定情景</span>
+        <span class="ctrl-label">多选情景</span>
         <span class="ctrl-label" id="singleSceneDesc" style="color:var(--muted);font-size:.78rem"></span>
       </div>
       <div class="single-grid" id="singleGrid" style="display:none"></div>
@@ -479,8 +479,8 @@ const SCENES = [
 let curClass = null, curMode = 'practice';
 let remaining = [], drawn = [], usedScenes = [], nextScene = 1;
 let sceneMode = 'seq';                       // 练习：按顺序/随机
-let sceneSource = 'range';                   // 情景来源：范围/指定
-let singleScene = 1;                         // 指定情景编号
+let sceneSource = 'range';                   // 情景来源：范围/多选
+let multiScenes = [];                        // 多选情景集合
 let startN = 1, endN = 30;                   // 情景范围（双头）
 let pairMode = 'intra';                      // 考试：班内/跨班
 let partnerClass = null;                     // 跨班搭档班
@@ -669,33 +669,40 @@ function initRange(){
   s.oninput = sync;
   e.oninput = sync;
   sync();
-  // 指定情景：块状网格，点击选择
+  // 指定情景：块状网格，点击多选（默认全选）
   const grid = $('singleGrid');
   grid.innerHTML = '';
+  multiScenes = SCENES.map(s => s.id);
   SCENES.forEach(sc => {
     const chip = document.createElement('button');
     chip.type = 'button';
-    chip.className = 'scene-chip' + (sc.id === singleScene ? ' on' : '');
+    chip.className = 'scene-chip on';
     chip.innerHTML = '场景' + sc.id + '<small>' + sc.title + '</small>';
     chip.onclick = () => {
-      singleScene = sc.id;
-      grid.querySelectorAll('.scene-chip').forEach(c => c.classList.remove('on'));
-      chip.classList.add('on');
-      $('singleSceneDesc').textContent = '所有抽取均使用：场景' + singleScene + '：' + sceneById(singleScene).title;
+      const on = chip.classList.toggle('on');
+      if (on) multiScenes.push(sc.id);
+      else multiScenes = multiScenes.filter(id => id !== sc.id);
+      updateMultiDesc();
     };
     grid.appendChild(chip);
   });
-  $('singleSceneDesc').textContent = '所有抽取均使用：场景' + singleScene + '：' + sceneById(singleScene).title;
+  updateMultiDesc();
+}
+function updateMultiDesc(){
+  $('singleSceneDesc').textContent = '已选 ' + multiScenes.length + ' 个情景，抽取仅从选中中随机';
+  if (multiScenes.length === 0){
+    $('singleSceneDesc').textContent = '未选择任何情景（点击上方块选择）';
+  }
 }
 function setSceneSource(m){
   sceneSource = m;
   $('segSrcRange').classList.toggle('on', m === 'range');
-  $('segSrcSingle').classList.toggle('on', m === 'single');
-  const isSingle = m === 'single';
-  $('rangeStartRow').style.display = isSingle ? 'none' : 'flex';
-  $('rangeEndRow').style.display = isSingle ? 'none' : 'flex';
-  $('singleRow').style.display = isSingle ? 'flex' : 'none';
-  $('singleGrid').style.display = isSingle ? 'grid' : 'none';
+  $('segSrcSingle').classList.toggle('on', m === 'pick');
+  const isPick = m === 'pick';
+  $('rangeStartRow').style.display = isPick ? 'none' : 'flex';
+  $('rangeEndRow').style.display = isPick ? 'none' : 'flex';
+  $('singleRow').style.display = isPick ? 'flex' : 'none';
+  $('singleGrid').style.display = isPick ? 'grid' : 'none';
 }
 function setMode(m){
   sceneMode = m;
@@ -809,9 +816,11 @@ function pickSceneFor(p1, p2){
 
 /* ================= 抽签 ================= */
 function pickScene(){
-  if (sceneSource === 'single'){
-    // 指定模式：固定使用该情景，不去重
-    return singleScene;
+  if (sceneSource === 'pick'){
+    // 多选模式：从选中集合中随机抽取（不重复，用完触发自动重置）
+    const pool = multiScenes.filter(id => !usedScenes.includes(id));
+    if (pool.length === 0) return null;
+    return pool[Math.floor(Math.random() * pool.length)];
   }
   const lo = Math.min(startN, endN), hi = Math.max(startN, endN);
   if (sceneMode === 'seq' && curMode === 'practice'){
@@ -902,8 +911,8 @@ function startDraw(){
   function settle(){
     let scObj = pickSceneFor(w1, w2);
     let sceneReset = false;
-    if (scObj === null && sceneSource === 'range'){
-      // 情景全部用完 → 自动重置情景池，继续抽取
+    if (scObj === null && (sceneSource === 'range' || sceneSource === 'pick')){
+      // 情景全部用完（范围或多选）→ 自动重置情景池，继续抽取
       usedScenes = [];
       nextScene = startN;
       scObj = pickSceneFor(w1, w2);
@@ -937,7 +946,7 @@ function startDraw(){
     }
     $('subHint').textContent = '点击按钮抽取下一位';
     remaining = remaining.filter(p => p !== w1 && p !== w2);
-    if (sceneSource === 'range'){
+    if (sceneSource === 'range' || sceneSource === 'pick'){
       usedScenes.push(sc);
       nextScene = sc + 1;
     }
